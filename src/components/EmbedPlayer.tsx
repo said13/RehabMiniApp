@@ -17,8 +17,8 @@ export function EmbedPlayer({ src, placeholderTitle }: { src: string; placeholde
         url.searchParams.set('autoplay', '1');
       }
       if (!url.searchParams.has('muted')) {
-        console.log('[EmbedPlayer] Adding missing param: muted=1');
-        url.searchParams.set('muted', '1');
+        console.log('[EmbedPlayer] Adding missing param: muted=0');
+        url.searchParams.set('muted', '0');
       }
       if (!url.searchParams.has('playsinline')) {
         console.log('[EmbedPlayer] Adding missing param: playsinline=1');
@@ -52,7 +52,7 @@ export function EmbedPlayer({ src, placeholderTitle }: { src: string; placeholde
     <div className="w-full h-full" style={{ position: 'relative' }}>
       <iframe
         src={iframeSrc}
-        style={{ width: '100%', border: 'none', aspectRatio: '67 / 119' }}
+        style={{ width: '100%', height: '100%', border: 'none' }}
         allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
         allowFullScreen
         title={placeholderTitle || 'Video'}
