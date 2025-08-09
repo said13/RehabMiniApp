@@ -3,7 +3,7 @@ import { useEnvReady } from './hooks/useEnvReady';
 import { safeLocalStorage } from './utils/localStorage';
 import { placeholderThumb, placeholderProduct } from './utils/placeholders';
 import { ContinueWatching } from './components/ContinueWatching';
-import { SequenceOverlay } from './components/SequenceOverlay';
+import { VideoScreen } from './components/VideoScreen';
 import { TabButton } from './components/TabButton';
 import { ActivePill } from './components/ActivePill';
 import { Modal } from './components/Modal';
@@ -185,17 +185,9 @@ export default function RehabMiniApp() {
         </div>
       </nav>
 
-      <Modal open={!!viewer} onClose={() => setViewer(null)}>
-        {viewer && (
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-base font-semibold">{viewer.title}</h3>
-              <button className="text-sm text-gray-400" onClick={() => setViewer(null)}>Close</button>
-            </div>
-            <SequenceOverlay course={sampleCourse} envReady={envReady} />
-          </div>
-        )}
-      </Modal>
+      {viewer && (
+        <VideoScreen course={sampleCourse} envReady={envReady} title={viewer.title} onClose={() => setViewer(null)} />
+      )}
 
       <Modal open={paywallOpen} onClose={() => setPaywallOpen(false)}>
         <div className="p-4">
