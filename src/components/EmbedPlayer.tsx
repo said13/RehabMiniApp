@@ -1,4 +1,4 @@
-export function EmbedPlayer({ src, placeholderTitle }: { src: string; placeholderTitle?: string }) {
+export function EmbedPlayer({ src, placeholderTitle, autoplay = true, muted = false, showControls = false }: { src: string; placeholderTitle?: string; autoplay?: boolean; muted?: boolean; showControls?: boolean }) {
   console.log('[EmbedPlayer] Incoming src:', src);
 
   const isMux = (u: string) => {
@@ -12,22 +12,10 @@ export function EmbedPlayer({ src, placeholderTitle }: { src: string; placeholde
   const ensureParams = (u: string) => {
     try {
       const url = new URL(u);
-      if (!url.searchParams.has('autoplay')) {
-        console.log('[EmbedPlayer] Adding missing param: autoplay=1');
-        url.searchParams.set('autoplay', '1');
-      }
-      if (!url.searchParams.has('muted')) {
-        console.log('[EmbedPlayer] Adding missing param: muted=0');
-        url.searchParams.set('muted', '0');
-      }
-      if (!url.searchParams.has('playsinline')) {
-        console.log('[EmbedPlayer] Adding missing param: playsinline=1');
-        url.searchParams.set('playsinline', '1');
-      }
-      if (!url.searchParams.has('controls')) {
-        console.log('[EmbedPlayer] Adding missing param: controls=1');
-        url.searchParams.set('controls', '1');
-      }
+      url.searchParams.set('autoplay', autoplay ? '1' : '0');
+      url.searchParams.set('muted', muted ? '1' : '0');
+      url.searchParams.set('playsinline', '1');
+      url.searchParams.set('controls', showControls ? '1' : '0');
       return url.toString();
     } catch (err) {
       console.error('[EmbedPlayer] Invalid video URL:', u, err);
