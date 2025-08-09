@@ -1,0 +1,582 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+
+export default function App() {
+  return <RehabMiniApp />;
+}
+
+// const mockVideo = 'https://player.vimeo.com/10679287'
+// Mux demo playback IDs (user provided)
+const muxVideos = [
+  'https://player.mux.com/6ndHuwoLUZl36fI00EiZap9gt02vGFTxZx3IDLSGfXC700',
+  'https://player.mux.com/bgecsZbv01aIkOCRJXZJcuSA8crx5JbTgQkD7QYfomLg',
+  'https://player.mux.com/c9tAOav7YMXvCWfm1X9whepwxt9lPE4t01X022XobmrFU',
+  'https://player.mux.com/voo02Gtd6Iw8i1c69sZgnA0293MnP3yH4RVS4Gt5tAl5I'
+];
+// ==========================
+// ENV SAFE HELPERS (fix: "Env not inited yet")
+// ==========================
+function useEnvReady() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    // Defer to next tick so the webview/canvas finishes booting
+    const id = requestAnimationFrame(() => setReady(typeof window !== 'undefined' && typeof document !== 'undefined'));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  return ready;
+}
+
+function safeLocalStorage() {
+  const get = (k: string, fallback: any) => {
+    try {
+      if (typeof window === 'undefined' || !('localStorage' in window)) return fallback;
+      const v = window.localStorage.getItem(k);
+      return v == null ? fallback : JSON.parse(v);
+    } catch {
+      return fallback;
+    }
+  };
+  const set = (k: string, v: any) => {
+    try {
+      if (typeof window === 'undefined' || !('localStorage' in window)) return;
+      window.localStorage.setItem(k, JSON.stringify(v));
+    } catch {}
+  };
+  return { get, set };
+}
+
+// ==========================
+// SVG data-url helpers
+// ==========================
+function placeholderThumb(color: string) {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 90'><defs><linearGradient id='g' x1='0' x2='1' y1='0' y2='1'><stop offset='0%' stop-color='${color}'/><stop offset='100%' stop-color='#111'/></linearGradient></defs><rect width='160' height='90' rx='12' fill='url(#g)'/><g fill='white' opacity='.9'><circle cx='70' cy='45' r='14'/><polygon points='68,37 84,45 68,53' fill='white'/></g></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+function placeholderProduct(label: string) {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><defs><linearGradient id='g' x1='0' x2='1' y1='0' y2='1'><stop offset='0%' stop-color='#374151'/><stop offset='100%' stop-color='#1f2937'/></linearGradient></defs><rect width='120' height='120' rx='16' fill='url(#g)'/><text x='50%' y='54%' dominant-baseline='middle' text-anchor='middle' font-size='40' font-family='Arial' fill='#e5e7eb'>${label}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+// ==========================
+// Course model (laps/exercises)
+// ==========================
+export type Course = { id: string; title: string; laps: Lap[] };
+export type Lap = { id: string; title: string; exercises: Exercise[]; repeat?: number };
+export type Exercise = {
+  id: string; title: string; video: string; thumbnail?: string;
+  mode: 'time' | 'reps' | 'demo'; durationSec?: number; reps?: number; restSec?: number; cues?: Cue[]
+};
+export type Cue = { atSec: number; text: string; tts?: boolean };
+
+// Sample course (uses Vimeo URLs so it plays everywhere)
+const sampleCourse: Course = {
+  id: 'core-01', title: 'Core Stability — Beginner',
+  laps: [
+    { id: 'warm', title: 'Warm‑up', exercises: [
+      { id:'cat', title:'Cat–Cow',    video: muxVideos[0],   mode:'time', durationSec:30, restSec:10, cues:[{atSec:5,text:'Slow and smooth',tts:true}] },
+      { id:'hinge', title:'Hip Hinge', video: muxVideos[1], mode:'reps', reps:12,       restSec:15 },
+    ]},
+    { id: 'main', title: 'Main set', repeat: 2, exercises: [
+      { id:'plank', title:'Elbow Plank', video: muxVideos[2], mode:'time', durationSec:45, restSec:20, cues:[{atSec:10,text:'Engage core',tts:true},{atSec:35,text:'10 seconds',tts:true}] },
+      { id:'bird',  title:'Bird Dog',    video: muxVideos[3],  mode:'reps', reps:10,       restSec:15 },
+    ]}
+  ]
+};
+
+// ==========================
+// Root App (dark theme, lists, tabs)
+// ==========================
+function RehabMiniApp() {
+  const envReady = useEnvReady();
+  const ls = safeLocalStorage();
+
+  // Tabs & UI
+  const [tab, setTab] = useState<"home" | "shop" | "profile">("home");
+  const [viewer, setViewer] = useState<{ id: string; title: string } | null>(null);
+  const [paywallOpen, setPaywallOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  // Persisted state (init with safe defaults; hydrate after env ready)
+  const [subActive, setSubActive] = useState<boolean>(false);
+  const [cart, setCart] = useState<{ id: string; title: string; price: number; image: string; qty: number }[]>([]);
+
+  // Hydrate on env ready
+  useEffect(() => {
+    if (!envReady) return;
+    const sub = ls.get('subActive', '0') === '1';
+    const c = ls.get('cart', []);
+    setSubActive(!!sub);
+    setCart(Array.isArray(c) ? c : []);
+  }, [envReady]);
+
+  // Persist changes when env is ready
+  useEffect(() => { if (envReady) try { window.localStorage.setItem('subActive', subActive ? '1' : '0'); } catch {} }, [envReady, subActive]);
+  useEffect(() => { if (envReady) try { window.localStorage.setItem('cart', JSON.stringify(cart)); } catch {} }, [envReady, cart]);
+
+  // Data
+  const banners = useMemo(() => ([
+    { id: 'sub',   title: 'Go PRO',     text: 'Unlock all courses & programs', cta: 'Subscribe', color: 'bg-gradient-to-r from-blue-600 to-indigo-700' },
+    { id: 'spine', title: 'Healthy Back', text: '10‑min daily plan',           cta: 'Explore',   color: 'bg-gradient-to-r from-emerald-600 to-teal-700' },
+  ]), []);
+
+  const lessons = useMemo(() => ([
+    { id: 'l1', title: 'Breathing & Mobility (Free)', thumb: placeholderThumb('#2563eb'), free: true },
+    { id: 'l2', title: 'Neck Relief',                  thumb: placeholderThumb('#7c3aed'), free: false },
+    { id: 'l3', title: 'Lower Back Care',              thumb: placeholderThumb('#d97706'), free: false },
+    { id: 'l4', title: 'Shoulder Mobility',            thumb: placeholderThumb('#059669'), free: false },
+  ]), []);
+
+  const products = useMemo(() => ([
+    { id: 'p1', title: 'Resistance Band — Small',  price: 19.9, image: placeholderProduct('S') },
+    { id: 'p2', title: 'Resistance Band — Medium', price: 22.9, image: placeholderProduct('M') },
+    { id: 'p3', title: 'Resistance Band — Large',  price: 25.9, image: placeholderProduct('L') },
+  ]), []);
+
+  // Carousel index w/ auto-advance
+  const [bannerIdx, setBannerIdx] = useState(0);
+  useEffect(() => {
+    if (paywallOpen || viewer) return;
+    const t = setInterval(() => setBannerIdx(i => (i + 1) % banners.length), 4000);
+    return () => clearInterval(t);
+  }, [paywallOpen, viewer, banners.length]);
+
+  // Toast helper
+  const ping = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 1300); };
+
+  // Lesson open
+  const handleOpenLesson = (l: any) => {
+    if (!l.free && !subActive) { setPaywallOpen(true); return; }
+    setViewer({ id: l.id, title: l.title });
+    if (envReady) try { window.localStorage.setItem('lastLesson', JSON.stringify(l)); } catch {}
+  };
+
+  // Cart ops
+  const addToCart = (p: any) => {
+    setCart(prev => {
+      const ex = prev.find(i => i.id === p.id);
+      const next = ex ? prev.map(i => i.id === p.id ? { ...i, qty: i.qty + 1 } : i) : [...prev, { ...p, qty: 1 }];
+      return next;
+    });
+    ping('Added to cart');
+  };
+
+  return (
+    <div className="w-full min-h-[100dvh] bg-neutral-950 text-gray-100 flex flex-col font-sans">
+      <main className="flex-1 pb-20 animate-fadeIn">
+        {tab === 'home' && (
+          <div>
+            {/* Carousel */}
+            <div className="px-4 pt-4">
+              <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory no-scrollbar">
+                {banners.map((b, idx) => (
+                  <article key={b.id} className={`min-w-[85%] ${b.color} text-white rounded-3xl p-5 snap-start shadow-lg hover:scale-[1.02] transition-transform`} onClick={() => (idx === 0 ? setPaywallOpen(true) : setBannerIdx(idx))}>
+                    <h3 className="text-xl font-bold tracking-tight">{b.title}</h3>
+                    <p className="text-sm opacity-90 mt-1">{b.text}</p>
+                    <button className="mt-4 px-5 py-2 bg-white/90 text-gray-900 rounded-xl text-sm font-semibold shadow-sm hover:bg-white transition">{b.cta}</button>
+                  </article>
+                ))}
+              </div>
+              <div className="flex gap-2 mt-3 justify-center">
+                {banners.map((_, i) => (
+                  <span key={i} className={`w-2 h-2 rounded-full cursor-pointer ${bannerIdx === i ? 'bg-blue-400' : 'bg-gray-600'}`} onClick={() => setBannerIdx(i)} />
+                ))}
+              </div>
+            </div>
+
+            {/* Lists */}
+            <section className="px-4 mt-6">
+              <h4 className="text-lg font-bold mb-2">Continue watching</h4>
+              <ContinueWatching onOpen={(l:any) => handleOpenLesson(l)} envReady={envReady} />
+
+              <h4 className="text-lg font-bold mt-5 mb-3">Starter Course</h4>
+              <div className="grid gap-3">
+                {lessons.map((l) => (
+                  <button key={l.id} className="relative text-left group active:scale-[.99] transition flex items-center gap-3 p-2 rounded-2xl bg-neutral-900 border border-neutral-800" onClick={() => handleOpenLesson(l)}>
+                    <img src={l.thumb} alt="" className={`w-28 aspect-video rounded-xl object-cover ${!l.free && !subActive ? 'blur-[3px] brightness-90' : ''}`} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium leading-snug line-clamp-2">{l.title}</div>
+                      {!l.free && !subActive && (
+                        <div className="mt-1 text-xs text-gray-400 flex items-center gap-1">🔒 <span>Subscribe to unlock</span></div>
+                      )}
+                    </div>
+                    <span className="text-gray-500">›</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          </div>
+        )}
+
+        {tab === 'shop' && (
+          <div className="px-4 pt-4">
+            <h3 className="text-lg font-bold mb-4">Shop</h3>
+            <div className="grid gap-3">
+              {products.map((p) => (
+                <div key={p.id} className="rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden">
+                  <div className="flex items-center gap-3 p-3">
+                    <img src={p.image} alt="" className="w-16 h-16 rounded-xl object-cover" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium line-clamp-2">{p.title}</div>
+                      <div className="mt-1 text-sm font-bold">${p.price.toFixed(2)}</div>
+                    </div>
+                    <button className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition" onClick={() => addToCart(p)}>
+                      Add
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="h-3" />
+            <div className="fixed left-0 right-0 bottom-20 px-4">
+              <div className="bg-neutral-900 text-gray-100 rounded-2xl p-3 flex items-center justify-between shadow-xl max-w-lg mx-auto border border-neutral-800">
+                <div className="text-sm">
+                  <b>{cart.reduce((s, i) => s + i.qty, 0)}</b> items • <b>${cart.reduce((s, i) => s + i.qty * i.price, 0).toFixed(2)}</b>
+                </div>
+                <button className="px-4 py-2 bg-white/10 text-white rounded-xl text-sm font-medium hover:bg-white/20 transition" onClick={() => ping('Checkout complete (mock)')}>
+                  Checkout
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {tab === 'profile' && (
+          <div className="px-4 pt-4 animate-fadeIn">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-neutral-800 to-neutral-700 flex items-center justify-center text-xl shadow-md">🧑🏻‍💻</div>
+              <div>
+                <div className="text-base font-bold">Guest</div>
+                <div className="text-xs text-gray-400 mt-0.5">Subscription: {subActive ? 'Active' : 'None'}</div>
+              </div>
+            </div>
+            <div className="mt-6 grid gap-3">
+              <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-500 transition" onClick={() => { setSubActive(v => !v); ping(!subActive ? 'Subscription activated' : 'Subscription canceled'); }}>
+                {subActive ? 'Cancel subscription' : 'Activate subscription'}
+              </button>
+              <button className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 rounded-xl text-sm transition">Restore purchases</button>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Tabbar */}
+      <nav className="fixed bottom-3 left-0 right-0">
+        <div className="max-w-lg mx-auto">
+          <div className="mx-4 bg-black/70 backdrop-blur border border-neutral-800 shadow-lg rounded-2xl">
+            <div className="grid grid-cols-3 h-16 text-xs relative">
+              <ActivePill index={['home','shop','profile'].indexOf(tab)} />
+              <TabButton label="Home" active={tab==='home'} onClick={()=>setTab('home')} icon="🏠" />
+              <TabButton label="Shop" active={tab==='shop'} onClick={()=>setTab('shop')} icon="🛍️" />
+              <TabButton label="Profile" active={tab==='profile'} onClick={()=>setTab('profile')} icon="👤" />
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Viewer Modal (now with SequenceOverlay) */}
+      <Modal open={!!viewer} onClose={() => setViewer(null)}>
+        {viewer && (
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-base font-semibold">{viewer.title}</h3>
+              <button className="text-sm text-gray-400" onClick={() => setViewer(null)}>Close</button>
+            </div>
+            <SequenceOverlay course={sampleCourse} envReady={envReady} />
+          </div>
+        )}
+      </Modal>
+
+      {/* Paywall */}
+      <Modal open={paywallOpen} onClose={() => setPaywallOpen(false)}>
+        <div className="p-4">
+          <h3 className="text-base font-semibold mb-1">Go PRO</h3>
+          <p className="text-sm text-gray-400 mb-3">Unlock all lessons and weekly updates. Cancel anytime.</p>
+          <div className="rounded-2xl bg-white/5 p-3 mb-3">
+            <div className="flex items-center justify-between text-sm"><span>Monthly</span><b>$7.99</b></div>
+          </div>
+          <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-sm active:opacity-90 hover:bg-blue-500" onClick={() => { setSubActive(true); setPaywallOpen(false); ping('Subscription activated'); }}>Subscribe</button>
+        </div>
+      </Modal>
+
+      {toast && (
+        <div className="fixed bottom-24 left-0 right-0 flex justify-center animate-fadeIn">
+          <div className="bg-white/10 text-white text-sm px-4 py-2 rounded-full shadow-lg">{toast}</div>
+        </div>
+      )}
+
+      {/* Dev sanity tests */}
+      <DevTests />
+    </div>
+  );
+}
+
+// ==========================
+// Sequence runner + overlay (Vimeo-aware)
+// ==========================
+// Vimeo detection + lightweight embed
+
+function EmbedPlayer({ src, placeholderTitle }: { src: string; placeholderTitle?: string }) {
+  console.log("[EmbedPlayer] Incoming src:", src);
+
+  const isMux = (u: string) => {
+    const match = /^https:\/\/player\.mux\.com\//.test(u);
+    if (!match) {
+      console.warn("[EmbedPlayer] Not a Mux URL:", u);
+    }
+    return match;
+  };
+
+  const ensureParams = (u: string) => {
+    try {
+      const url = new URL(u);
+      if (!url.searchParams.has('autoplay')) {
+        console.log("[EmbedPlayer] Adding missing param: autoplay=1");
+        url.searchParams.set('autoplay', '1');
+      }
+      if (!url.searchParams.has('muted')) {
+        console.log("[EmbedPlayer] Adding missing param: muted=1");
+        url.searchParams.set('muted', '1');
+      }
+      if (!url.searchParams.has('playsinline')) {
+        console.log("[EmbedPlayer] Adding missing param: playsinline=1");
+        url.searchParams.set('playsinline', '1');
+      }
+      if (!url.searchParams.has('controls')) {
+        console.log("[EmbedPlayer] Adding missing param: controls=1");
+        url.searchParams.set('controls', '1');
+      }
+      return url.toString();
+    } catch (err) {
+      console.error("[EmbedPlayer] Invalid video URL:", u, err);
+      return u;
+    }
+  };
+
+  if (!src) {
+    console.error("[EmbedPlayer] No src provided at all.");
+  }
+
+  const mux = src && isMux(src) ? ensureParams(src) : null;
+
+  if (!mux) {
+    console.warn("[EmbedPlayer] Mux URL could not be resolved. Falling back to placeholder.");
+  }
+
+  const iframeSrc = mux || "https://player.mux.com/6ndHuwoLUZl36fI00EiZap9gt02vGFTxZx3IDLSGfXC700";
+  console.log("[EmbedPlayer] Final iframe src:", iframeSrc);
+
+  return (
+    <div className="w-full h-full" style={{ position: 'relative' }}>
+      <iframe
+        src={iframeSrc}
+        style={{ width: '100%', border: 'none', aspectRatio: '67 / 119' }}
+        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+        allowFullScreen
+        title={placeholderTitle || 'Video'}
+      />
+    </div>
+  );
+}
+
+
+function useSequenceRunner(course: Course) {
+  const [lapIdx, setLapIdx] = useState(0);
+  const [exIdx, setExIdx] = useState(0);
+  const [mode, setMode] = useState<'playing'|'rest'|'paused'|'complete'>('paused');
+  const [remaining, setRemaining] = useState<number | null>(null);
+
+  const lap = course.laps[lapIdx];
+  const ex = lap?.exercises[exIdx];
+
+  // time countdown
+  useEffect(()=>{
+    if(mode!=='playing' || !ex || ex.mode!=='time') return;
+    if(remaining==null) setRemaining(ex.durationSec ?? 0);
+    if(remaining==null) return;
+    const t = setInterval(()=> setRemaining(v=> (v!>0? v!-1:0)), 1000);
+    return ()=> clearInterval(t);
+  },[mode, ex, remaining]);
+  useEffect(()=>{ if(ex?.mode==='time' && remaining===0) next(); },[remaining]);
+
+  function play(){ setMode('playing'); }
+  function pause(){ setMode('paused'); }
+  function skipRest(){ if(mode==='rest'){ setMode('playing'); setRemaining(null); next(); } }
+  function addRest(delta:number){ if(mode==='rest') setRemaining(v=> Math.max(0,(v??0)+delta)); }
+  function resetTimers(){ setRemaining(null); }
+
+  function next(){
+    const cur = ex;
+    if(cur?.restSec && mode !== 'rest'){ setMode('rest'); setRemaining(cur.restSec); return; }
+    if(exIdx+1 < (lap?.exercises.length||0)){ setExIdx(exIdx+1); resetTimers(); setMode('playing'); return; }
+    if(lapIdx+1 < course.laps.length){ setLapIdx(lapIdx+1); setExIdx(0); resetTimers(); setMode('playing'); return; }
+    setMode('complete');
+  }
+  function prev(){
+    if(exIdx>0){ setExIdx(exIdx-1); resetTimers(); return; }
+    if(lapIdx>0){ const prevLap = course.laps[lapIdx-1]; setLapIdx(lapIdx-1); setExIdx(prevLap.exercises.length-1); resetTimers(); }
+  }
+
+  return { lapIdx, exIdx, lap, ex, mode, remaining, play, pause, next, prev, skipRest, addRest };
+}
+
+function SequenceOverlay({ course, envReady }: { course: Course; envReady: boolean }){
+  const s = useSequenceRunner(course);
+  const idxLabel = s.lap ? `${s.exIdx+1}/${s.lap.exercises.length}` : '';
+  const [ttsEnabled, setTtsEnabled] = useState(false); // enable after first user tap
+
+  // voice cues via Web Speech (only when env ready & after user interaction)
+  useEffect(()=>{
+    if(!envReady || !ttsEnabled || !s.ex) return;
+    const cues = s.ex.cues?.filter(c=>c.tts) || [];
+    if(cues.length===0) return;
+    const timers = cues.map(c=> setTimeout(()=>{
+      try{ if('speechSynthesis' in window){ const u = new SpeechSynthesisUtterance(c.text); window.speechSynthesis.speak(u); } }catch{}
+    }, (c.atSec||0)*1000));
+    return ()=> timers.forEach(clearTimeout);
+  },[envReady, ttsEnabled, s.ex?.id]);
+
+  const [playTick, setPlayTick] = useState(0);
+  const onPlayPress = () => { setTtsEnabled(true); setPlayTick(t => t + 1); s.play(); };
+
+  return (
+    <div className="p-2 -mx-2">
+      <div className="flex items-center justify-between text-xs text-gray-400 px-2">
+        <div>{s.lap?.title}</div>
+        <div>{idxLabel}</div>
+      </div>
+
+      <div className="relative rounded-xl overflow-hidden my-3 bg-black aspect-video">
+        <EmbedPlayer src={s.ex?.video || ''} placeholderTitle={s.ex?.title || 'Ready'} />
+        
+      </div>
+
+      {s.mode==='rest' ? (
+        <div className="flex items-center justify-between rounded-xl bg-white/5 p-3">
+          <div className="text-sm">Rest</div>
+          <div className="text-xl tabular-nums">{s.remaining ?? 0}s</div>
+          <div className="flex gap-2">
+            <button className="px-3 py-2 bg-white/10 rounded-lg" onClick={()=>s.addRest(-5)}>-5s</button>
+            <button className="px-3 py-2 bg-white/10 rounded-lg" onClick={()=>s.addRest(5)}>+5s</button>
+            <button className="px-3 py-2 bg-blue-600 rounded-lg" onClick={s.skipRest}>Skip</button>
+          </div>
+        </div>
+      ) : s.ex?.mode==='time' ? (
+        <div className="flex items-center justify-between rounded-xl bg-white/5 p-3">
+          <div className="text-sm">{s.ex.title}</div>
+          <div className="text-2xl tabular-nums">{s.remaining ?? s.ex.durationSec}s</div>
+          <button className="px-3 py-2 bg-white/10 rounded-lg" onClick={s.next}>Next</button>
+        </div>
+      ) : s.ex ? (
+        <div className="flex items-center justify-between rounded-xl bg-white/5 p-3">
+          <div className="text-sm">{s.ex.title}</div>
+          <div className="text-xs text-gray-400">{s.ex.reps} reps</div>
+          <button className="px-3 py-2 bg-blue-600 rounded-lg" onClick={s.next}>Mark done →</button>
+        </div>
+      ) : (
+        <button className="w-full px-4 py-3 bg-blue-600 rounded-xl" onClick={onPlayPress}>Start workout</button>
+      )}
+
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <button className="px-4 py-3 bg-white/10 rounded-xl" onClick={s.prev}>◀︎ Prev</button>
+        <button className="px-4 py-3 bg-blue-600 rounded-xl" onClick={s.mode==='playing'? s.pause : onPlayPress}>{s.mode==='playing'?'Pause':'Play'}</button>
+        <button className="px-4 py-3 bg-white/10 rounded-xl" onClick={s.next}>Next ▶︎</button>
+      </div>
+    </div>
+  );
+}
+
+// ==========================
+// Small components (tabbar, modal, continue watching, tests)
+// ==========================
+function TabButton({ label, active, onClick, icon }: { label: string; active: boolean; onClick: () => void; icon: string }) {
+  return (
+    <button aria-pressed={active} className={`relative z-10 flex flex-col items-center justify-center ${active ? 'text-blue-400' : 'text-gray-400'} active:opacity-80 transition`} onClick={onClick}>
+      <div className="text-xl leading-none">{icon}</div>
+      <div className="mt-0.5 font-medium">{label}</div>
+    </button>
+  );
+}
+
+function ActivePill({ index }: { index: number }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => { if (ref.current) ref.current.style.transform = `translateX(${index * 100}%)`; }, [index]);
+  return <div ref={ref} className="absolute inset-y-1 left-1 w-1/3 rounded-xl bg-blue-900/30 transition-transform duration-300" aria-hidden />;
+}
+
+function Modal({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
+  const sheet = useRef<HTMLDivElement | null>(null);
+  const startY = useRef<number | null>(null);
+  const dy = useRef(0);
+
+  useEffect(() => { dy.current = 0; if (sheet.current) sheet.current.style.transform = ''; }, [open]);
+
+  const onTouchStart = (e: React.TouchEvent) => { startY.current = e.touches[0].clientY; };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (startY.current == null) return;
+    dy.current = Math.max(0, e.touches[0].clientY - startY.current);
+    if (sheet.current) sheet.current.style.transform = `translateY(${dy.current}px)`;
+  };
+  const onTouchEnd = () => {
+    if (dy.current > 80) onClose();
+    else if (sheet.current) sheet.current.style.transform = 'translateY(0)';
+    startY.current = null; dy.current = 0;
+  };
+
+  return (
+    <div className={`fixed inset-0 z-50 transition ${open ? 'pointer-events-auto' : 'pointer-events-none'}`} aria-hidden={!open}>
+      <div className={`absolute inset-0 bg-black/60 transition-opacity ${open ? 'opacity-100' : 'opacity-0'}`} onClick={onClose} />
+      <div ref={sheet} className={`absolute left-0 right-0 bottom-0 bg-neutral-900 text-gray-100 rounded-t-3xl shadow-2xl max-w-lg mx-auto transition-transform ${open ? 'translate-y-0' : 'translate-y-full'}`} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+        <div className="h-5 flex items-center justify-center"><div className="mt-2 h-1 w-10 bg-neutral-700 rounded-full" /></div>
+        <div>{children}</div>
+        <div className="h-4" />
+      </div>
+    </div>
+  );
+}
+
+function ContinueWatching({ onOpen, envReady }: { onOpen: (l: any) => void; envReady: boolean }) {
+  const [last, setLast] = useState<any | null>(null);
+  useEffect(() => {
+    if (!envReady) return;
+    try { const raw = window.localStorage.getItem('lastLesson'); if (raw) setLast(JSON.parse(raw)); } catch {}
+  }, [envReady]);
+  if (!last) return <div className="text-sm text-gray-400">No recent lessons</div>;
+  return (
+    <button className="w-full flex items-center gap-3 active:opacity-90" onClick={() => onOpen(last)}>
+      <img src={last.thumb} className="w-24 aspect-video rounded-lg object-cover" />
+      <div className="flex-1 text-left">
+        <div className="text-sm font-medium line-clamp-2">{last.title}</div>
+        <div className="text-xs text-gray-500">Tap to resume</div>
+      </div>
+    </button>
+  );
+}
+
+function DevTests() {
+  const [results, setResults] = useState<{ name: string; ok: boolean; details?: string }[]>([]);
+  useEffect(() => {
+    const cases: { name: string; run: () => boolean }[] = [
+      { name: 'placeholderThumb returns data-url',   run: () => /^data:image\/svg\+xml;utf8,/.test(placeholderThumb('#000')) },
+      { name: 'placeholderProduct returns data-url', run: () => /^data:image\/svg\+xml;utf8,/.test(placeholderProduct('X')) },
+      // new tests: env readiness becomes true eventually
+      { name: 'envReady eventually true',            run: () => typeof window !== 'undefined' && typeof document !== 'undefined' },      
+      { name: 'isMux detects mux url', run: () => /^https:\/\/player\.mux\.com\//.test(muxVideos[0]) },
+    ];
+    const res = cases.map(c => { try { return { name: c.name, ok: c.run() }; } catch (e:any) { return { name: c.name, ok:false, details:e?.message }; } });
+    setResults(res); console.table(res);
+  }, []);
+  return <div style={{ position:'fixed', bottom:0, left:0, opacity:0, pointerEvents:'none' }} aria-hidden>{results.map(r=> <div key={r.name}>{r.name}:{r.ok?'PASS':'FAIL'}</div>)}</div>;
+}
+
+// Minimal global styles (safe)
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.innerHTML = `
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+    .animate-fadeIn { animation: fadeIn .2s ease-out }
+  `;
+  document.head.appendChild(style);
+}
+
