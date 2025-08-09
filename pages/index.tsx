@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import Head from 'next/head';
 import App from '../src/App';
 
 export default function Home() {
@@ -13,5 +14,15 @@ export default function Home() {
     document.head.appendChild(style);
   }, []);
 
-  return <App />;
+  return (
+    <>
+      <Head>
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css"
+        />
+      </Head>
+      <App />
+    </>
+  );
 }
