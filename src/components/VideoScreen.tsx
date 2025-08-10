@@ -1,12 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useSequenceRunner } from '../hooks/useSequenceRunner';
 import type { Course } from '../types';
 import { EmbedPlayer } from './EmbedPlayer';
 
 export function VideoScreen({ course, onClose, title }: { course: Course; onClose: () => void; title?: string }) {
   const s = useSequenceRunner(course);
-
-  useEffect(() => { if (s.mode === 'rest') s.next(); }, [s.mode]);
 
   const [playTick, setPlayTick] = useState(0);
   const [muted, setMuted] = useState(true);
@@ -35,6 +33,15 @@ export function VideoScreen({ course, onClose, title }: { course: Course; onClos
         muted={muted}
         showControls={false}
       />
+      {s.mode === 'rest' && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="bg-black/70 text-white px-4 py-3 rounded-xl text-center">
+            <div>Rest</div>
+            <div className="text-xl tabular-nums">{s.remaining ?? 0}s</div>
+            <button className="mt-2 px-3 py-1 bg-white/20 rounded" onClick={s.skipRest}>Skip</button>
+          </div>
+        </div>
+      )}
       <div className="absolute left-4" style={{ top: topSafe }}>
         <button className="px-4 py-2 bg-black/60 text-white rounded-lg" onClick={onClose}>Exit</button>
       </div>
