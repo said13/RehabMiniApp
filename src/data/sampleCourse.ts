@@ -1,10 +1,10 @@
 import type { Course } from '../types';
 
 export const muxVideos = [
-  'https://player.mux.com/6ndHuwoLUZl36fI00EiZap9gt02vGFTxZx3IDLSGfXC700',
-  'https://player.mux.com/bgecsZbv01aIkOCRJXZJcuSA8crx5JbTgQkD7QYfomLg',
-  'https://player.mux.com/c9tAOav7YMXvCWfm1X9whepwxt9lPE4t01X022XobmrFU',
-  'https://player.mux.com/voo02Gtd6Iw8i1c69sZgnA0293MnP3yH4RVS4Gt5tAl5I'
+  'https://player.mux.com/nw0001NHe7ZpvmnTBhd6AH5oUl2biWrBwA00SNkgJAt5lY',
+  'https://player.mux.com/7QQ8Gwxui4ZnCP7C00shpGZfKBdyz028bz02BMS01DvzFN8',
+  'https://player.mux.com/s7ue8GS5mSVDMfo01mjIPsbwwXFqCrYdU02hbwE8dZ02dM',
+  'https://player.mux.com/vOmxI8tsGBggPKdhs9xJ00SqAwgzWyszRbKy8YVmdxOU'
 ];
 
 export const sampleCourse: Course = {
