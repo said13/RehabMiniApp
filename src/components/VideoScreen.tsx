@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSequenceRunner } from '../hooks/useSequenceRunner';
 import type { Course } from '../types';
 import { PlaylistPlayer, type PlaylistItem } from './PlaylistPlayer';
@@ -7,6 +7,10 @@ export function VideoScreen({ course, onClose, title }: { course: Course; onClos
   const s = useSequenceRunner(course);
 
   const [muted, setMuted] = useState(true);
+
+  useEffect(() => {
+    s.play();
+  }, []);
 
   // Flat list of all exercises for playlist support
   const playlist: PlaylistItem[] = useMemo(() => {
@@ -50,23 +54,62 @@ export function VideoScreen({ course, onClose, title }: { course: Course; onClos
           <div className="bg-black/70 text-white px-4 py-3 rounded-xl text-center">
             <div>Rest</div>
             <div className="text-xl tabular-nums">{s.remaining ?? 0}s</div>
-            <button className="mt-2 px-3 py-1 bg-white/20 rounded" onClick={s.skipRest}>Skip</button>
+            <button
+              aria-label="Skip rest"
+              className="mt-2 p-2 bg-white/20 rounded-full text-xl"
+              onClick={s.skipRest}
+            >
+              ⏩
+            </button>
           </div>
         </div>
       )}
       <div className="absolute left-4" style={{ top: topSafe }}>
-        <button className="px-4 py-2 bg-black/60 text-white rounded-lg" onClick={onClose}>Exit</button>
+        <button
+          aria-label="Exit"
+          className="p-2 bg-black/60 text-white rounded-full text-xl"
+          onClick={onClose}
+        >
+          ✕
+        </button>
       </div>
-      <div className="absolute right-4 text-right text-white" style={{ top: topSafe }}>
+      <div
+        className="absolute right-4 text-right text-white bg-black/60 px-3 py-2 rounded-lg"
+        style={{ top: topSafe }}
+      >
         {title && <div className="text-sm mb-1">{title}</div>}
         <div className="text-sm">{s.ex?.title}</div>
         <div className="text-xs opacity-70">{idxLabel}</div>
       </div>
-      <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-3 text-white">
-        <button className="px-4 py-2 bg-white/10 rounded-lg" onClick={handlePrev}>◀︎</button>
-        <button className="px-4 py-2 bg-blue-600 rounded-lg" onClick={handlePlayPause}>{s.mode === 'playing' ? 'Pause' : 'Play'}</button>
-        <button className="px-4 py-2 bg-white/10 rounded-lg" onClick={handleNext}>▶︎</button>
-        <button className="px-4 py-2 bg-white/10 rounded-lg" onClick={handleMute}>{muted ? 'Unmute' : 'Mute'}</button>
+      <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4 text-white">
+        <button
+          aria-label="Previous"
+          className="p-3 bg-white/10 rounded-full text-xl"
+          onClick={handlePrev}
+        >
+          ⏮
+        </button>
+        <button
+          aria-label={s.mode === 'playing' ? 'Pause' : 'Play'}
+          className="p-3 bg-blue-600 rounded-full text-xl"
+          onClick={handlePlayPause}
+        >
+          {s.mode === 'playing' ? '⏸' : '▶'}
+        </button>
+        <button
+          aria-label="Next"
+          className="p-3 bg-white/10 rounded-full text-xl"
+          onClick={handleNext}
+        >
+          ⏭
+        </button>
+        <button
+          aria-label={muted ? 'Unmute' : 'Mute'}
+          className="p-3 bg-white/10 rounded-full text-xl"
+          onClick={handleMute}
+        >
+          {muted ? '🔇' : '🔊'}
+        </button>
       </div>
     </div>
   );
