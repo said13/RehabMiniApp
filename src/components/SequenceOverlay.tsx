@@ -51,22 +51,34 @@ export function SequenceOverlay({ course, envReady }: { course: Course; envReady
         <div className="flex items-center justify-between rounded-xl bg-white/5 p-3">
           <div className="text-sm">{s.ex.title}</div>
           <div className="text-2xl tabular-nums">{s.remaining ?? s.ex.durationSec}s</div>
-          <button className="px-3 py-2 bg-white/10 rounded-lg" onClick={s.next}>Next</button>
+          <button className="px-3 py-2 bg-white/10 rounded-lg flex items-center gap-2" onClick={s.next}>
+            <span>Next</span>
+            <i className="fa-solid fa-chevron-right"></i>
+          </button>
         </div>
       ) : s.ex ? (
         <div className="flex items-center justify-between rounded-xl bg-white/5 p-3">
           <div className="text-sm">{s.ex.title}</div>
           <div className="text-xs text-gray-400">{s.ex.reps} reps</div>
-          <button className="px-3 py-2 bg-blue-600 rounded-lg" onClick={s.next}>Mark done →</button>
+          <button className="px-3 py-2 bg-blue-600 rounded-lg flex items-center gap-2" onClick={s.next}>
+            <span>Mark done</span>
+            <i className="fa-solid fa-arrow-right"></i>
+          </button>
         </div>
       ) : (
         <button className="w-full px-4 py-3 bg-blue-600 rounded-xl" onClick={onPlayPress}>Start workout</button>
       )}
 
       <div className="mt-3 grid grid-cols-3 gap-2">
-        <button className="px-4 py-3 bg-white/10 rounded-xl" onClick={s.prev}>◀︎ Prev</button>
+        <button className="px-4 py-3 bg-white/10 rounded-xl flex items-center justify-center gap-2" onClick={s.prev}>
+          <i className="fa-solid fa-chevron-left"></i>
+          <span>Prev</span>
+        </button>
         <button className="px-4 py-3 bg-blue-600 rounded-xl" onClick={s.mode === 'playing' ? s.pause : onPlayPress}>{s.mode === 'playing' ? 'Pause' : 'Play'}</button>
-        <button className="px-4 py-3 bg-white/10 rounded-xl" onClick={s.next}>Next ▶︎</button>
+        <button className="px-4 py-3 bg-white/10 rounded-xl flex items-center justify-center gap-2" onClick={s.next}>
+          <span>Next</span>
+          <i className="fa-solid fa-chevron-right"></i>
+        </button>
       </div>
     </div>
   );
