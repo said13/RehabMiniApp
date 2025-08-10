@@ -23,6 +23,8 @@ export function VideoScreen({ course, onClose, title }: { course: Course; onClos
   const handleNext = () => { s.next(); setPlayTick(t => t + 1); };
   const handleMute = () => { setMuted(m => !m); setPlayTick(t => t + 1); };
 
+  const topSafe = 'calc(env(safe-area-inset-top) + 1rem)';
+
   return (
     <div className="fixed inset-0 bg-black z-50">
       <EmbedPlayer
@@ -33,10 +35,10 @@ export function VideoScreen({ course, onClose, title }: { course: Course; onClos
         muted={muted}
         showControls={false}
       />
-      <div className="absolute top-4 left-4">
+      <div className="absolute left-4" style={{ top: topSafe }}>
         <button className="px-4 py-2 bg-black/60 text-white rounded-lg" onClick={onClose}>Exit</button>
       </div>
-      <div className="absolute top-4 right-4 text-right text-white">
+      <div className="absolute right-4 text-right text-white" style={{ top: topSafe }}>
         {title && <div className="text-sm mb-1">{title}</div>}
         <div className="text-sm">{s.ex?.title}</div>
         <div className="text-xs opacity-70">{idxLabel}</div>

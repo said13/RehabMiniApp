@@ -47,7 +47,9 @@ export default function RehabMiniApp() {
   useEffect(() => {
     if (!envReady) return;
     try {
-      (window as any).Telegram?.WebApp?.requestFullscreen?.();
+      const wa = (window as any).Telegram?.WebApp;
+      wa?.requestFullscreen?.();
+      wa?.disableVerticalSwipe?.();
     } catch {}
   }, [envReady]);
 
@@ -94,7 +96,10 @@ export default function RehabMiniApp() {
   };
 
   return (
-    <div className="w-full min-h-[100dvh] bg-neutral-950 text-gray-100 flex flex-col font-sans">
+    <div
+      className="w-full min-h-[100dvh] bg-neutral-950 text-gray-100 flex flex-col font-sans"
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+    >
       <main className="flex-1 pb-20 animate-fadeIn">
         {tab === 'home' && (
           <div>
