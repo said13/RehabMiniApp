@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Custom Mux Playlist Player</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root { color-scheme: dark; }
+    body { 
+        width: 375px;      /* mobile width */
+        height: 667px;     /* mobile height */
+        margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#0b0b0b; color:#eee; 
+    }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 20px; }
+    .title { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .title h1 { font-size:18px; margin: 0; font-weight:600; }
+    .player { position: relative; background:#000; border-radius: 12px; overflow:hidden; margin-top:12px; }
+    video { width:100%; display:block; background:#000; }
+    .controls {
+      display:flex; gap:8px; align-items:center; justify-content:space-between;
+      padding:12px; background:rgba(0,0,0,.45);
+    }
+    .left, .right { display:flex; gap:8px; align-items:center; }
+    button {
+      padding:10px 14px; border-radius:8px; border:1px solid #3a3a3a;
+      background:#1c1c1c; color:#eee; cursor:pointer;
+    }
+    button:hover { background:#262626; }
+    .pill { font-size:12px; opacity:.8; padding:6px 10px; border:1px dashed #444; border-radius:999px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="title">
+      <h1 id="label">Loading…</h1>
+      <div class="pill" id="counter">0 / 0</div>
+    </div>
+
+    <div class="player">
+      <video id="vid" playsinline autoplay muted loop preload="auto" controls></video>
+      <div class="controls">
+        <div class="left">
+          <button id="prevBtn" aria-label="Previous">⟵ Prev</button>
+          <button id="nextBtn" aria-label="Next">Next ⟶</button>
+        </div>
+        <div class="right">
+          <button id="muteBtn" aria-label="Mute/Unmute">Unmute</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- hls.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script>
+    // 1) EDIT THIS LIST ONLY
+    // You can use: { id: "<PLAYBACK_ID>", title: "…" } or { url: "https://stream.mux.com/<id>.m3u8", title: "…" }
+    // Optional per-video signed playback token: token: "<JWT>"
+    const VIDEOS = [
+      { id: "nw0001NHe7ZpvmnTBhd6AH5oUl2biWrBwA00SNkgJAt5lY", title: "V1" },
+      { id: "7QQ8Gwxui4ZnCP7C00shpGZfKBdyz028bz02BMS01DvzFN8", title: "V2"},
+      { id: "s7ue8GS5mSVDMfo01mjIPsbwwXFqCrYdU02hbwE8dZ02dM", title: "V3"},
+      { id: "vOmxI8tsGBggPKdhs9xJ00SqAwgzWyszRbKy8YVmdxOU", title: "V4"},
+    ];
+
+    // 2) NOTHING BELOW NEEDS CHANGING
+    const $ = id => document.getElementById(id);
+    const vid = $("vid");
+    const prevBtn = $("prevBtn");
+    const nextBtn = $("nextBtn");
+    const muteBtn = $("muteBtn");
+    const label = $("label");
+    const counter = $("counter");
+    let idx = 0, hls;
+
+    function buildSrc(item){
+      if (item.url) {
+        if (item.token && !/[?&]token=/.test(item.url)) {
+          return item.url + (item.url.includes("?") ? "&" : "?") + "token=" + encodeURIComponent(item.token);
+        }
+        return item.url;
+      }
+      let u = `https://stream.mux.com/${item.id}.m3u8`;
+      if (item.token) u += `?token=${encodeURIComponent(item.token)}`;
+      return u;
+    }
+    function buildPoster(item){
+      if (!item.id) return "";
+      let p = `https://image.mux.com/${item.id}/thumbnail.jpg?time=1`;
+      if (item.token) p += `&token=${encodeURIComponent(item.token)}`;
+      return p;
+    }
+
+    function destroyHls(){ if (hls) { try { hls.destroy(); } catch(e){} hls = null; } }
+
+    function load(i){
+      idx = (i + VIDEOS.length) % VIDEOS.length;
+      const item = VIDEOS[idx];
+      const src = buildSrc(item);
+      const poster = buildPoster(item);
+      label.textContent = item.title || (item.id || item.url);
+      counter.textContent = `${idx+1} / ${VIDEOS.length}`;
+      vid.loop = true;
+      vid.autoplay = true;
+      if (poster) vid.poster = poster;
+
+      destroyHls();
+
+      // Keep a generous buffer so loops don’t re-download segments during one session
+      const hlsConfig = { maxBufferLength: 120, backBufferLength: 90, capLevelOnFPSDrop: true };
+
+      if (vid.canPlayType("application/vnd.apple.mpegurl")) {
+        vid.src = src;                // Safari / iOS native HLS
+        vid.play().catch(()=>{});
+      } else if (Hls.isSupported()) {
+        hls = new Hls(hlsConfig);
+        hls.loadSource(src);
+        hls.attachMedia(vid);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => vid.play().catch(()=>{}));
+      } else {
+        alert("HLS is not supported in this browser.");
+      }
+    }
+
+    prevBtn.onclick = () => load(idx - 1);
+    nextBtn.onclick = () => load(idx + 1);
+    muteBtn.onclick = () => {
+      vid.muted = !vid.muted;
+      muteBtn.textContent = vid.muted ? "Unmute" : "Mute";
+    };
+
+    // Keyboard: ← → to switch
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft") { e.preventDefault(); load(idx - 1); }
+      if (e.key === "ArrowRight") { e.preventDefault(); load(idx + 1); }
+      if (e.key.toLowerCase() === "m") muteBtn.click();
+    });
+
+    // Autoload first video
+    if (!VIDEOS.length) { label.textContent = "Add videos in VIDEOS[]"; }
+    else { load(0); }
+  </script>
+</body>
+</html>
