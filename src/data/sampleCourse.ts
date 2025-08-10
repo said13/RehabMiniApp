@@ -22,7 +22,8 @@ export const sampleCourse: Course = {
     {
       id: 'main',
       title: 'Main set',
-      repeat: 2,
+      rounds: 2,
+      restBetweenSec: 30,
       exercises: [
         { id: 'plank', title: 'Elbow Plank', video: muxVideos[2], mode: 'time', durationSec: 45, restSec: 20, cues: [{ atSec: 10, text: 'Engage core', tts: true }, { atSec: 35, text: '10 seconds', tts: true }] },
         { id: 'bird', title: 'Bird Dog', video: muxVideos[3], mode: 'reps', reps: 10, restSec: 15 }
