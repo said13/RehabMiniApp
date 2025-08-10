@@ -177,7 +177,7 @@ export default function RehabMiniApp() {
                             <span className="text-sm">
                               {e.title} — {e.mode === 'time' ? `${e.durationSec}s` : `${e.reps} reps`}
                             </span>
-                            <span className="text-blue-400 text-sm">▶</span>
+                            <i className="fa-solid fa-play text-blue-400 text-sm"></i>
                           </button>
                         ))}
                       </div>
@@ -201,8 +201,9 @@ export default function RehabMiniApp() {
                       <div className="text-sm font-medium line-clamp-2">{p.title}</div>
                       <div className="mt-1 text-sm font-bold">${p.price.toFixed(2)}</div>
                     </div>
-                    <button className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition" onClick={() => addToCart(p)}>
-                      Add
+                    <button className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition flex items-center gap-1" onClick={() => addToCart(p)}>
+                      <i className="fa-solid fa-cart-plus"></i>
+                      <span>Add</span>
                     </button>
                   </div>
                 </div>
@@ -214,8 +215,9 @@ export default function RehabMiniApp() {
                 <div className="text-sm">
                   <b>{cart.reduce((s, i) => s + i.qty, 0)}</b> items • <b>${cart.reduce((s, i) => s + i.qty * i.price, 0).toFixed(2)}</b>
                 </div>
-                <button className="px-4 py-2 bg-white/10 text-white rounded-xl text-sm font-medium hover:bg-white/20 transition" onClick={() => ping('Checkout complete (mock)')}>
-                  Checkout
+                <button className="px-4 py-2 bg-white/10 text-white rounded-xl text-sm font-medium hover:bg-white/20 transition flex items-center gap-2" onClick={() => ping('Checkout complete (mock)')}>
+                  <i className="fa-solid fa-credit-card"></i>
+                  <span>Checkout</span>
                 </button>
               </div>
             </div>
@@ -228,7 +230,9 @@ export default function RehabMiniApp() {
               {tgUser?.photo_url ? (
                 <img src={tgUser.photo_url} alt="" className="w-14 h-14 rounded-full object-cover shadow-md" />
               ) : (
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-neutral-800 to-neutral-700 flex items-center justify-center text-xl shadow-md">🧑🏻‍💻</div>
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-neutral-800 to-neutral-700 flex items-center justify-center text-xl shadow-md">
+                  <i className="fa-solid fa-user"></i>
+                </div>
               )}
               <div>
                 <div className="text-base font-bold">
@@ -238,10 +242,14 @@ export default function RehabMiniApp() {
               </div>
             </div>
             <div className="mt-6 grid gap-3">
-              <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-500 transition" onClick={() => { setSubActive(v => !v); ping(!subActive ? 'Subscription activated' : 'Subscription canceled'); }}>
-                {subActive ? 'Cancel subscription' : 'Activate subscription'}
+              <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-500 transition flex items-center justify-center gap-2" onClick={() => { setSubActive(v => !v); ping(!subActive ? 'Subscription activated' : 'Subscription canceled'); }}>
+                <i className="fa-solid fa-crown"></i>
+                <span>{subActive ? 'Cancel subscription' : 'Activate subscription'}</span>
               </button>
-              <button className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 rounded-xl text-sm transition">Restore purchases</button>
+              <button className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 rounded-xl text-sm transition flex items-center justify-center gap-2">
+                <i className="fa-solid fa-rotate-left"></i>
+                <span>Restore purchases</span>
+              </button>
             </div>
           </div>
         )}
@@ -252,9 +260,9 @@ export default function RehabMiniApp() {
           <div className="mx-4 bg-black/70 backdrop-blur border border-neutral-800 shadow-lg rounded-2xl">
             <div className="grid grid-cols-3 h-16 text-xs relative">
               <ActivePill index={['home','shop','profile'].indexOf(tab)} />
-              <TabButton label="Home" active={tab==='home'} onClick={()=>setTab('home')} icon="🏠" />
-              <TabButton label="Shop" active={tab==='shop'} onClick={()=>setTab('shop')} icon="🛍️" />
-              <TabButton label="Profile" active={tab==='profile'} onClick={()=>setTab('profile')} icon="👤" />
+              <TabButton label="Home" active={tab==='home'} onClick={()=>setTab('home')} icon={<i className="fa-solid fa-house"></i>} />
+              <TabButton label="Shop" active={tab==='shop'} onClick={()=>setTab('shop')} icon={<i className="fa-solid fa-store"></i>} />
+              <TabButton label="Profile" active={tab==='profile'} onClick={()=>setTab('profile')} icon={<i className="fa-solid fa-user"></i>} />
             </div>
           </div>
         </div>
