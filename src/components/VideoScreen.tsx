@@ -1,37 +1,49 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSequenceRunner } from '../hooks/useSequenceRunner';
 import type { Course } from '../types';
-import { EmbedPlayer } from './EmbedPlayer';
+import { PlaylistPlayer, type PlaylistItem } from './PlaylistPlayer';
 
 export function VideoScreen({ course, onClose, title }: { course: Course; onClose: () => void; title?: string }) {
   const s = useSequenceRunner(course);
 
-  const [playTick, setPlayTick] = useState(0);
   const [muted, setMuted] = useState(true);
+
+  // Flat list of all exercises for playlist support
+  const playlist: PlaylistItem[] = useMemo(() => {
+    return course.laps.flatMap(l =>
+      l.exercises.map(ex => {
+        // Support full .m3u8 URL or Mux playback ID
+        if (/\.m3u8($|\?)/.test(ex.video)) {
+          return { url: ex.video, title: ex.title };
+        }
+        const m = ex.video.match(/(?:player|stream)\.mux\.com\/([^\.?]+)/);
+        return { id: m ? m[1] : ex.video, title: ex.title };
+      })
+    );
+  }, [course]);
 
   const totalExercises = course.laps.reduce((sum, l) => sum + l.exercises.length, 0);
   const beforeCurrent = course.laps.slice(0, s.lapIdx).reduce((sum, l) => sum + l.exercises.length, 0);
-  const idxLabel = s.ex ? `${beforeCurrent + s.exIdx + 1}/${totalExercises}` : '';
+  const currentIndex = beforeCurrent + s.exIdx;
+  const idxLabel = s.ex ? `${currentIndex + 1}/${totalExercises}` : '';
 
   const handlePlayPause = () => {
     if (s.mode === 'playing') s.pause(); else s.play();
-    setPlayTick(t => t + 1);
   };
-  const handlePrev = () => { s.prev(); setPlayTick(t => t + 1); };
-  const handleNext = () => { s.next(); setPlayTick(t => t + 1); };
-  const handleMute = () => { setMuted(m => !m); setPlayTick(t => t + 1); };
+  const handlePrev = () => { s.prev(); };
+  const handleNext = () => { s.next(); };
+  const handleMute = () => { setMuted(m => !m); };
 
   const topSafe = 'calc(env(safe-area-inset-top) + 1rem)';
 
   return (
     <div className="fixed inset-0 bg-black z-50">
-      <EmbedPlayer
-        key={`${s.ex?.id}-${playTick}-${muted}-${s.mode}`}
-        src={s.ex?.video || ''}
-        placeholderTitle={s.ex?.title || 'Video'}
+      <PlaylistPlayer
+        playlist={playlist}
+        index={currentIndex}
         autoplay={s.mode === 'playing'}
         muted={muted}
-        showControls={false}
+        loop
       />
       {s.mode === 'rest' && (
         <div className="absolute inset-0 flex items-center justify-center">
