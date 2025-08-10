@@ -44,6 +44,13 @@ export default function RehabMiniApp() {
     } catch {}
   }, []);
 
+  useEffect(() => {
+    if (!envReady) return;
+    try {
+      (window as any).Telegram?.WebApp?.requestFullscreen?.();
+    } catch {}
+  }, [envReady]);
+
   const banners = useMemo(() => ([
     { id: 'sub', title: 'Go PRO', text: 'Unlock all courses & programs', cta: 'Subscribe', color: 'bg-gradient-to-r from-blue-600 to-indigo-700' },
     { id: 'spine', title: 'Healthy Back', text: '10‑min daily plan', cta: 'Explore', color: 'bg-gradient-to-r from-emerald-600 to-teal-700' },
