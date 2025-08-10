@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "echo \"No tests\""
+    "test": "echo \"No tests\"",
+    "server": "node server/index.js"
   },
   "dependencies": {
     "next": "^14.1.0",
