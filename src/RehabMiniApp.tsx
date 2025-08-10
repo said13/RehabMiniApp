@@ -130,7 +130,7 @@ export default function RehabMiniApp() {
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium leading-snug line-clamp-2">{cat.title}</div>
                         </div>
-                        <span className="text-gray-500">›</span>
+                        <span className="text-gray-500"><i className="fa-solid fa-chevron-right"></i></span>
                       </button>
                     ))}
                   </div>
@@ -139,7 +139,10 @@ export default function RehabMiniApp() {
             )}
             {selectedCategory && !selectedCourse && (
               <div className="px-4 pt-4">
-                <button className="mb-4 text-sm text-gray-400" onClick={() => setSelectedCategory(null)}>← Back</button>
+                <button className="mb-4 text-sm text-gray-400 flex items-center gap-1" onClick={() => setSelectedCategory(null)}>
+                  <i className="fa-solid fa-chevron-left"></i>
+                  <span>Back</span>
+                </button>
                 <h4 className="text-lg font-bold mb-3">{selectedCategory.title}</h4>
                 <div className="grid gap-3">
                   {selectedCategory.courses.map((c) => (
@@ -147,7 +150,7 @@ export default function RehabMiniApp() {
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium leading-snug line-clamp-2">{c.title}</div>
                       </div>
-                      <span className="text-gray-500">›</span>
+                      <span className="text-gray-500"><i className="fa-solid fa-chevron-right"></i></span>
                     </button>
                   ))}
                 </div>
@@ -155,7 +158,10 @@ export default function RehabMiniApp() {
             )}
             {selectedCourse && (
               <div className="px-4 pt-4">
-                <button className="mb-4 text-sm text-gray-400" onClick={() => setSelectedCourse(null)}>← Back</button>
+                <button className="mb-4 text-sm text-gray-400 flex items-center gap-1" onClick={() => setSelectedCourse(null)}>
+                  <i className="fa-solid fa-chevron-left"></i>
+                  <span>Back</span>
+                </button>
                 <button
                   className="w-full mb-4 px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-500 transition"
                   onClick={() => setViewerCourse(selectedCourse)}

@@ -59,7 +59,7 @@ export function VideoScreen({ course, onClose, title }: { course: Course; onClos
               className="mt-2 p-2 bg-white/20 rounded-full text-xl"
               onClick={s.skipRest}
             >
-              ⏩
+              <i className="fa-solid fa-forward"></i>
             </button>
           </div>
         </div>
@@ -70,7 +70,7 @@ export function VideoScreen({ course, onClose, title }: { course: Course; onClos
           className="p-2 bg-black/60 text-white rounded-full text-xl"
           onClick={onClose}
         >
-          ✕
+          <i className="fa-solid fa-xmark"></i>
         </button>
       </div>
       <div
@@ -87,28 +87,28 @@ export function VideoScreen({ course, onClose, title }: { course: Course; onClos
           className="p-3 bg-white/10 rounded-full text-xl"
           onClick={handlePrev}
         >
-          ⏮
+          <i className="fa-solid fa-backward-step"></i>
         </button>
         <button
           aria-label={s.mode === 'playing' ? 'Pause' : 'Play'}
           className="p-3 bg-blue-600 rounded-full text-xl"
           onClick={handlePlayPause}
         >
-          {s.mode === 'playing' ? '⏸' : '▶'}
+          <i className={`fa-solid ${s.mode === 'playing' ? 'fa-pause' : 'fa-play'}`}></i>
         </button>
         <button
           aria-label="Next"
           className="p-3 bg-white/10 rounded-full text-xl"
           onClick={handleNext}
         >
-          ⏭
+          <i className="fa-solid fa-forward-step"></i>
         </button>
         <button
           aria-label={muted ? 'Unmute' : 'Mute'}
           className="p-3 bg-white/10 rounded-full text-xl"
           onClick={handleMute}
         >
-          {muted ? '🔇' : '🔊'}
+          <i className={`fa-solid ${muted ? 'fa-volume-xmark' : 'fa-volume-high'}`}></i>
         </button>
       </div>
     </div>
