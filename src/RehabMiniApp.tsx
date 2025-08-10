@@ -2,21 +2,23 @@ import { useEffect, useMemo, useState } from 'react';
 import { retrieveLaunchParams } from '@telegram-apps/sdk';
 import { useEnvReady } from './hooks/useEnvReady';
 import { safeLocalStorage } from './utils/localStorage';
-import { placeholderThumb, placeholderProduct } from './utils/placeholders';
-import { ContinueWatching } from './components/ContinueWatching';
+import { placeholderProduct } from './utils/placeholders';
 import { VideoScreen } from './components/VideoScreen';
 import { TabButton } from './components/TabButton';
 import { ActivePill } from './components/ActivePill';
 import { Modal } from './components/Modal';
 import { DevTests } from './components/DevTests';
-import { sampleCourse } from './data/sampleCourse';
+import { sampleCategories } from './data/sampleCategories';
+import type { Category, Course } from './types';
 
 export default function RehabMiniApp() {
   const envReady = useEnvReady();
   const ls = safeLocalStorage();
 
   const [tab, setTab] = useState<'home' | 'shop' | 'profile'>('home');
-  const [viewer, setViewer] = useState<{ id: string; title: string } | null>(null);
+  const [viewerCourse, setViewerCourse] = useState<Course | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -58,12 +60,7 @@ export default function RehabMiniApp() {
     { id: 'spine', title: 'Healthy Back', text: '10‑min daily plan', cta: 'Explore', color: 'bg-gradient-to-r from-emerald-600 to-teal-700' },
   ]), []);
 
-  const lessons = useMemo(() => ([
-    { id: 'l1', title: 'Breathing & Mobility (Free)', thumb: placeholderThumb('#2563eb'), free: true },
-    { id: 'l2', title: 'Neck Relief', thumb: placeholderThumb('#7c3aed'), free: false },
-    { id: 'l3', title: 'Lower Back Care', thumb: placeholderThumb('#d97706'), free: false },
-    { id: 'l4', title: 'Shoulder Mobility', thumb: placeholderThumb('#059669'), free: false },
-  ]), []);
+  const categories = useMemo(() => sampleCategories, []);
 
   const products = useMemo(() => ([
     { id: 'p1', title: 'Resistance Band — Small', price: 19.9, image: placeholderProduct('S') },
@@ -73,18 +70,12 @@ export default function RehabMiniApp() {
 
   const [bannerIdx, setBannerIdx] = useState(0);
   useEffect(() => {
-    if (paywallOpen || viewer) return;
+    if (paywallOpen || viewerCourse) return;
     const t = setInterval(() => setBannerIdx(i => (i + 1) % banners.length), 4000);
     return () => clearInterval(t);
-  }, [paywallOpen, viewer, banners.length]);
+  }, [paywallOpen, viewerCourse, banners.length]);
 
   const ping = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 1300); };
-
-  const handleOpenLesson = (l: any) => {
-    if (!l.free && !subActive) { setPaywallOpen(true); return; }
-    setViewer({ id: l.id, title: l.title });
-    if (envReady) try { window.localStorage.setItem('lastLesson', JSON.stringify(l)); } catch {}
-  };
 
   const addToCart = (p: any) => {
     setCart(prev => {
@@ -103,43 +94,72 @@ export default function RehabMiniApp() {
       <main className="flex-1 pb-20 animate-fadeIn">
         {tab === 'home' && (
           <div>
-            <div className="px-4 pt-4">
-              <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory no-scrollbar">
-                {banners.map((b, idx) => (
-                  <article key={b.id} className={`min-w-[85%] ${b.color} text-white rounded-3xl p-5 snap-start shadow-lg hover:scale-[1.02] transition-transform`} onClick={() => (idx === 0 ? setPaywallOpen(true) : setBannerIdx(idx))}>
-                    <h3 className="text-xl font-bold tracking-tight">{b.title}</h3>
-                    <p className="text-sm opacity-90 mt-1">{b.text}</p>
-                    <button className="mt-4 px-5 py-2 bg-white/90 text-gray-900 rounded-xl text-sm font-semibold shadow-sm hover:bg-white transition">{b.cta}</button>
-                  </article>
-                ))}
+            {!selectedCategory && !selectedCourse && (
+              <>
+                <div className="px-4 pt-4">
+                  <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory no-scrollbar">
+                    {banners.map((b, idx) => (
+                      <article key={b.id} className={`min-w-[85%] ${b.color} text-white rounded-3xl p-5 snap-start shadow-lg hover:scale-[1.02] transition-transform`} onClick={() => (idx === 0 ? setPaywallOpen(true) : setBannerIdx(idx))}>
+                        <h3 className="text-xl font-bold tracking-tight">{b.title}</h3>
+                        <p className="text-sm opacity-90 mt-1">{b.text}</p>
+                        <button className="mt-4 px-5 py-2 bg-white/90 text-gray-900 rounded-xl text-sm font-semibold shadow-sm hover:bg-white transition">{b.cta}</button>
+                      </article>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 mt-3 justify-center">
+                    {banners.map((_, i) => (
+                      <span key={i} className={`w-2 h-2 rounded-full cursor-pointer ${bannerIdx === i ? 'bg-blue-400' : 'bg-gray-600'}`} onClick={() => setBannerIdx(i)} />
+                    ))}
+                  </div>
+                </div>
+                <section className="px-4 mt-6">
+                  <h4 className="text-lg font-bold mb-3">Категории</h4>
+                  <div className="grid gap-3">
+                    {categories.map((cat) => (
+                      <button key={cat.id} className="relative text-left group active:scale-[.99] transition flex items-center gap-3 p-4 rounded-2xl bg-neutral-900 border border-neutral-800" onClick={() => setSelectedCategory(cat)}>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium leading-snug line-clamp-2">{cat.title}</div>
+                        </div>
+                        <span className="text-gray-500">›</span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              </>
+            )}
+            {selectedCategory && !selectedCourse && (
+              <div className="px-4 pt-4">
+                <button className="mb-4 text-sm text-gray-400" onClick={() => setSelectedCategory(null)}>← Back</button>
+                <h4 className="text-lg font-bold mb-3">{selectedCategory.title}</h4>
+                <div className="grid gap-3">
+                  {selectedCategory.courses.map((c) => (
+                    <button key={c.id} className="relative text-left group active:scale-[.99] transition flex items-center gap-3 p-4 rounded-2xl bg-neutral-900 border border-neutral-800" onClick={() => setSelectedCourse(c)}>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium leading-snug line-clamp-2">{c.title}</div>
+                      </div>
+                      <span className="text-gray-500">›</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="flex gap-2 mt-3 justify-center">
-                {banners.map((_, i) => (
-                  <span key={i} className={`w-2 h-2 rounded-full cursor-pointer ${bannerIdx === i ? 'bg-blue-400' : 'bg-gray-600'}`} onClick={() => setBannerIdx(i)} />
+            )}
+            {selectedCourse && (
+              <div className="px-4 pt-4">
+                <button className="mb-4 text-sm text-gray-400" onClick={() => setSelectedCourse(null)}>← Back</button>
+                <h4 className="text-lg font-bold mb-3">{selectedCourse.title}</h4>
+                {selectedCourse.laps.map((l) => (
+                  <div key={l.id} className="mb-4">
+                    <div className="font-medium">{l.title}{l.rounds ? ` ×${l.rounds}` : ''}</div>
+                    <ul className="ml-4 mt-1 text-sm text-gray-400 list-disc">
+                      {l.exercises.map((e) => (
+                        <li key={e.id}>{e.title} — {e.mode === 'time' ? `${e.durationSec}s` : `${e.reps} reps`}</li>
+                      ))}
+                    </ul>
+                  </div>
                 ))}
+                <button className="w-full mt-2 px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-500 transition" onClick={() => setViewerCourse(selectedCourse)}>Start</button>
               </div>
-            </div>
-
-            <section className="px-4 mt-6">
-              <h4 className="text-lg font-bold mb-2">Continue watching</h4>
-              <ContinueWatching onOpen={(l: any) => handleOpenLesson(l)} envReady={envReady} />
-
-              <h4 className="text-lg font-bold mt-5 mb-3">Starter Course</h4>
-              <div className="grid gap-3">
-                {lessons.map((l) => (
-                  <button key={l.id} className="relative text-left group active:scale-[.99] transition flex items-center gap-3 p-2 rounded-2xl bg-neutral-900 border border-neutral-800" onClick={() => handleOpenLesson(l)}>
-                    <img src={l.thumb} alt="" className={`w-28 aspect-video rounded-xl object-cover ${!l.free && !subActive ? 'blur-[3px] brightness-90' : ''}`} />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium leading-snug line-clamp-2">{l.title}</div>
-                      {!l.free && !subActive && (
-                        <div className="mt-1 text-xs text-gray-400 flex items-center gap-1">🔒 <span>Subscribe to unlock</span></div>
-                      )}
-                    </div>
-                    <span className="text-gray-500">›</span>
-                  </button>
-                ))}
-              </div>
-            </section>
+            )}
           </div>
         )}
 
@@ -214,8 +234,8 @@ export default function RehabMiniApp() {
         </div>
       </nav>
 
-      {viewer && (
-        <VideoScreen course={sampleCourse} title={viewer.title} onClose={() => setViewer(null)} />
+      {viewerCourse && (
+        <VideoScreen course={viewerCourse} title={viewerCourse.title} onClose={() => setViewerCourse(null)} />
       )}
 
       <Modal open={paywallOpen} onClose={() => setPaywallOpen(false)}>

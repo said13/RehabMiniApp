@@ -12,6 +12,14 @@ export type Exercise = {
   cues?: Cue[];
 };
 
-export type Lap = { id: string; title: string; exercises: Exercise[]; repeat?: number };
+export type Lap = {
+  id: string;
+  title: string;
+  exercises: Exercise[];
+  rounds?: number;
+  restBetweenSec?: number;
+};
 
 export type Course = { id: string; title: string; laps: Lap[] };
+
+export type Category = { id: string; title: string; courses: Course[] };
