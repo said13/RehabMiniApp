@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { retrieveLaunchParams } from '@telegram-apps/sdk';
 import { useEnvReady } from './hooks/useEnvReady';
 import { safeLocalStorage } from './utils/localStorage';
 import { placeholderThumb, placeholderProduct } from './utils/placeholders';
@@ -21,6 +22,7 @@ export default function RehabMiniApp() {
 
   const [subActive, setSubActive] = useState<boolean>(false);
   const [cart, setCart] = useState<{ id: string; title: string; price: number; image: string; qty: number }[]>([]);
+  const [tgUser, setTgUser] = useState<any | null>(null);
 
   useEffect(() => {
     if (!envReady) return;
@@ -32,6 +34,15 @@ export default function RehabMiniApp() {
 
   useEffect(() => { if (envReady) try { window.localStorage.setItem('subActive', subActive ? '1' : '0'); } catch {} }, [envReady, subActive]);
   useEffect(() => { if (envReady) try { window.localStorage.setItem('cart', JSON.stringify(cart)); } catch {} }, [envReady, cart]);
+
+  useEffect(() => {
+    try {
+      const lp = retrieveLaunchParams();
+      // lp.initData?.user contains Telegram user info if available
+      const u = lp?.initData?.user as any;
+      if (u) setTgUser(u);
+    } catch {}
+  }, []);
 
   const banners = useMemo(() => ([
     { id: 'sub', title: 'Go PRO', text: 'Unlock all courses & programs', cta: 'Subscribe', color: 'bg-gradient-to-r from-blue-600 to-indigo-700' },
@@ -156,9 +167,15 @@ export default function RehabMiniApp() {
         {tab === 'profile' && (
           <div className="px-4 pt-4 animate-fadeIn">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-neutral-800 to-neutral-700 flex items-center justify-center text-xl shadow-md">🧑🏻‍💻</div>
+              {tgUser?.photo_url ? (
+                <img src={tgUser.photo_url} alt="" className="w-14 h-14 rounded-full object-cover shadow-md" />
+              ) : (
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-neutral-800 to-neutral-700 flex items-center justify-center text-xl shadow-md">🧑🏻‍💻</div>
+              )}
               <div>
-                <div className="text-base font-bold">Guest</div>
+                <div className="text-base font-bold">
+                  {tgUser ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || tgUser.username || 'User' : 'Guest'}
+                </div>
                 <div className="text-xs text-gray-400 mt-0.5">Subscription: {subActive ? 'Active' : 'None'}</div>
               </div>
             </div>
