@@ -1,0 +1,40 @@
+.container {
+  display: flex;
+  min-height: 100vh;
+  font-family: sans-serif;
+}
+
+.sidebar {
+  width: 220px;
+  background: #f5f5f5;
+  padding: 20px;
+}
+
+.logo {
+  margin-bottom: 20px;
+  font-weight: bold;
+}
+
+.navList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.navItem {
+  margin-bottom: 10px;
+}
+
+.navLink {
+  color: #333;
+  text-decoration: none;
+}
+
+.navLink:hover {
+  color: #0070f3;
+}
+
+.main {
+  flex: 1;
+  padding: 20px;
+}

@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
-import type { Video } from 'src/types';
+import type { Category } from 'src/types';
 import AdminLayout from 'src/components/admin/AdminLayout';
 
-const emptyVideo: Video = { id: '', title: '', url: '' };
+const emptyForm = { id: '', title: '' };
 
-export default function AdminVideos() {
-  const [videos, setVideos] = useState<Video[]>([]);
-  const [form, setForm] = useState<Video>(emptyVideo);
+export default function AdminCategories() {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState<string | null>(null);
   const router = useRouter();
 
@@ -16,59 +17,62 @@ export default function AdminVideos() {
       router.replace('/admin/login');
       return;
     }
-    fetchVideos();
+    fetchCategories();
   }, []);
 
-  const fetchVideos = async () => {
-    const res = await fetch('/api/videos');
+  const fetchCategories = async () => {
+    const res = await fetch('/api/categories');
     const data = await res.json();
-    setVideos(data);
+    setCategories(data);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editId) {
-      await fetch(`/api/videos/${editId}`, {
+      await fetch(`/api/categories/${editId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
     } else {
-      await fetch('/api/videos', {
+      await fetch('/api/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
     }
-    setForm(emptyVideo);
+    setForm(emptyForm);
     setEditId(null);
-    fetchVideos();
+    fetchCategories();
   };
 
-  const handleEdit = (v: Video) => {
-    setEditId(v.id);
-    setForm(v);
+  const handleEdit = (cat: Category) => {
+    setEditId(cat.id);
+    setForm({ id: cat.id, title: cat.title });
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete?')) return;
-    await fetch(`/api/videos/${id}`, { method: 'DELETE' });
-    fetchVideos();
+    await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+    fetchCategories();
   };
 
   return (
     <AdminLayout>
-      <h1>Videos</h1>
+      <h1>Categories</h1>
       <ul>
-        {videos.map((v) => (
-          <li key={v.id}>
-            {v.title} ({v.id})
-            <button onClick={() => handleEdit(v)}>Edit</button>
-            <button onClick={() => handleDelete(v.id)}>Delete</button>
+        {categories.map((cat) => (
+          <li key={cat.id}>
+            {cat.title} ({cat.id}){' '}
+            <button onClick={() => handleEdit(cat)}>Edit</button>
+            <button onClick={() => handleDelete(cat.id)}>Delete</button>
+            <Link href={`/admin/categories/${cat.id}`} style={{ marginLeft: 10 }}>
+              Trainings
+            </Link>
           </li>
         ))}
       </ul>
-      <h2 style={{ marginTop: 30 }}>{editId ? 'Edit' : 'Add'} Video</h2>
+      <h2 style={{ marginTop: 30 }}>{editId ? 'Edit' : 'Add'} Category</h2>
       <form onSubmit={handleSubmit}>
         <input
           value={form.id}
@@ -80,11 +84,6 @@ export default function AdminVideos() {
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
           placeholder="title"
-        />
-        <input
-          value={form.url}
-          onChange={(e) => setForm({ ...form, url: e.target.value })}
-          placeholder="Mux URL"
         />
         <button type="submit">{editId ? 'Update' : 'Create'}</button>
       </form>
