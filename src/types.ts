@@ -1,5 +1,12 @@
 export type Cue = { atSec: number; text: string; tts?: boolean };
 
+export type Video = {
+  id: string;
+  title: string;
+  url: string;
+  thumbnail?: string;
+};
+
 export type Exercise = {
   id: string;
   title: string;
