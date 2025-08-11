@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import type { Category, Course } from '../../../src/types';
+import type { Category, Course } from 'src/types';
+import AdminLayout from 'src/components/admin/AdminLayout';
 
 const emptyCourse = { id: '', title: '' };
 
@@ -71,8 +72,8 @@ export default function CategoryDetail() {
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      <button onClick={() => router.push('/admin')}>Back</button>
+    <AdminLayout>
+      <button onClick={() => router.push('/admin/categories')}>Back</button>
       <h1>Category: {category?.title}</h1>
       <ul>
         {courses.map((c) => (
@@ -101,6 +102,6 @@ export default function CategoryDetail() {
         />
         <button type="submit">{editId ? 'Update' : 'Create'}</button>
       </form>
-    </div>
+    </AdminLayout>
   );
 }
