@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import type { Course, Exercise } from '../../../src/types';
+import type { Course, Exercise } from 'src/types';
+import AdminLayout from 'src/components/admin/AdminLayout';
 
 const blankExercise: Exercise = {
   id: '',
@@ -76,7 +77,7 @@ export default function CourseDetail() {
   };
 
   return (
-    <div style={{ padding: 20 }}>
+    <AdminLayout>
       <button onClick={() => router.back()}>Back</button>
       <h1>Training: {course?.title}</h1>
       <ul>
@@ -142,6 +143,6 @@ export default function CourseDetail() {
         />
         <button type="submit">{editIdx !== null ? 'Update' : 'Create'}</button>
       </form>
-    </div>
+    </AdminLayout>
   );
 }
