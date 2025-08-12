@@ -10,6 +10,7 @@ import { Modal } from './components/Modal';
 import { DevTests } from './components/DevTests';
 import { sampleCategories } from './data/sampleCategories';
 import type { Category, Course, Exercise } from './types';
+import { TinkoffPayForm } from './components/TinkoffPayForm';
 
 export default function RehabMiniApp() {
   const envReady = useEnvReady();
@@ -25,6 +26,7 @@ export default function RehabMiniApp() {
   const [subActive, setSubActive] = useState<boolean>(false);
   const [cart, setCart] = useState<{ id: string; title: string; price: number; image: string; qty: number }[]>([]);
   const [tgUser, setTgUser] = useState<any | null>(null);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   useEffect(() => {
     if (!envReady) return;
@@ -67,6 +69,8 @@ export default function RehabMiniApp() {
     { id: 'p2', title: 'Resistance Band — Medium', price: 22.9, image: placeholderProduct('M') },
     { id: 'p3', title: 'Resistance Band — Large', price: 25.9, image: placeholderProduct('L') },
   ]), []);
+
+  const SUB_PRICE = 799; // subscription price in RUB
 
   const [bannerIdx, setBannerIdx] = useState(0);
   useEffect(() => {
@@ -221,7 +225,7 @@ export default function RehabMiniApp() {
                 <div className="text-sm">
                   <b>{cart.reduce((s, i) => s + i.qty, 0)}</b> items • <b>${cart.reduce((s, i) => s + i.qty * i.price, 0).toFixed(2)}</b>
                 </div>
-                <button className="px-4 py-2 bg-white/10 text-white rounded-xl text-sm font-medium hover:bg-white/20 transition flex items-center gap-2" onClick={() => ping('Checkout complete (mock)')}>
+                <button className="px-4 py-2 bg-white/10 text-white rounded-xl text-sm font-medium hover:bg-white/20 transition flex items-center gap-2" onClick={() => setCheckoutOpen(true)}>
                   <i className="fa-solid fa-credit-card"></i>
                   <span>Checkout</span>
                 </button>
@@ -248,10 +252,21 @@ export default function RehabMiniApp() {
               </div>
             </div>
             <div className="mt-6 grid gap-3">
-              <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-500 transition flex items-center justify-center gap-2" onClick={() => { setSubActive(v => !v); ping(!subActive ? 'Subscription activated' : 'Subscription canceled'); }}>
-                <i className="fa-solid fa-crown"></i>
-                <span>{subActive ? 'Cancel subscription' : 'Activate subscription'}</span>
-              </button>
+              {subActive ? (
+                <button
+                  className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-500 transition flex items-center justify-center gap-2"
+                  onClick={() => { setSubActive(false); ping('Subscription canceled'); }}
+                >
+                  <i className="fa-solid fa-crown"></i>
+                  <span>Cancel subscription</span>
+                </button>
+              ) : (
+                <TinkoffPayForm
+                  amount={SUB_PRICE}
+                  description="Subscription"
+                  onPaid={() => { setSubActive(true); ping('Subscription activated'); }}
+                />
+              )}
               <button className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 rounded-xl text-sm transition flex items-center justify-center gap-2">
                 <i className="fa-solid fa-rotate-left"></i>
                 <span>Restore purchases</span>
@@ -278,14 +293,25 @@ export default function RehabMiniApp() {
         <VideoScreen course={viewerCourse} title={viewerCourse.title} onClose={() => setViewerCourse(null)} />
       )}
 
+      <Modal open={checkoutOpen} onClose={() => setCheckoutOpen(false)}>
+        <div className="p-4">
+          <h3 className="text-base font-semibold mb-1">Checkout</h3>
+          <TinkoffPayForm amount={cart.reduce((s, i) => s + i.qty * i.price, 0)} />
+        </div>
+      </Modal>
+
       <Modal open={paywallOpen} onClose={() => setPaywallOpen(false)}>
         <div className="p-4">
           <h3 className="text-base font-semibold mb-1">Go PRO</h3>
           <p className="text-sm text-gray-400 mb-3">Unlock all lessons and weekly updates. Cancel anytime.</p>
           <div className="rounded-2xl bg-white/5 p-3 mb-3">
-            <div className="flex items-center justify-between text-sm"><span>Monthly</span><b>$7.99</b></div>
+            <div className="flex items-center justify-between text-sm"><span>Monthly</span><b>{SUB_PRICE} ₽</b></div>
           </div>
-          <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-sm active:opacity-90 hover:bg-blue-500" onClick={() => { setSubActive(true); setPaywallOpen(false); ping('Subscription activated'); }}>Subscribe</button>
+          <TinkoffPayForm
+            amount={SUB_PRICE}
+            description="Subscription"
+            onPaid={() => { setSubActive(true); setPaywallOpen(false); ping('Subscription activated'); }}
+          />
         </div>
       </Modal>
 

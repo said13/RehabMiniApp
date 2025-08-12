@@ -13,6 +13,7 @@ export default function Home() {
         />
       </Head>
       <Script src="https://cdn.tailwindcss.com" strategy="beforeInteractive" />
+      <Script src="https://securepay.tinkoff.ru/html/payForm/js/tinkoff_v2.js" strategy="afterInteractive" />
       <App />
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
