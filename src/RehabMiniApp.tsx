@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { retrieveLaunchParams } from '@telegram-apps/sdk';
 import { useEnvReady } from './hooks/useEnvReady';
 import { safeLocalStorage } from './utils/localStorage';
-import { placeholderProduct } from './utils/placeholders';
 import { VideoScreen } from './components/VideoScreen';
 import { TabButton } from './components/TabButton';
 import { ActivePill } from './components/ActivePill';
@@ -16,7 +15,7 @@ export default function RehabMiniApp() {
   const envReady = useEnvReady();
   const ls = safeLocalStorage();
 
-  const [tab, setTab] = useState<'home' | 'shop' | 'profile'>('home');
+  const [tab, setTab] = useState<'home' | 'profile'>('home');
   const [viewerCourse, setViewerCourse] = useState<Course | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -24,20 +23,15 @@ export default function RehabMiniApp() {
   const [toast, setToast] = useState<string | null>(null);
 
   const [subActive, setSubActive] = useState<boolean>(false);
-  const [cart, setCart] = useState<{ id: string; title: string; price: number; image: string; qty: number }[]>([]);
   const [tgUser, setTgUser] = useState<any | null>(null);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   useEffect(() => {
     if (!envReady) return;
     const sub = ls.get('subActive', '0') === '1';
-    const c = ls.get('cart', []);
     setSubActive(!!sub);
-    setCart(Array.isArray(c) ? c : []);
   }, [envReady]);
 
   useEffect(() => { if (envReady) try { window.localStorage.setItem('subActive', subActive ? '1' : '0'); } catch {} }, [envReady, subActive]);
-  useEffect(() => { if (envReady) try { window.localStorage.setItem('cart', JSON.stringify(cart)); } catch {} }, [envReady, cart]);
 
   useEffect(() => {
     try {
@@ -64,12 +58,6 @@ export default function RehabMiniApp() {
 
   const categories = useMemo(() => sampleCategories, []);
 
-  const products = useMemo(() => ([
-    { id: 'p1', title: 'Resistance Band — Small', price: 19.9, image: placeholderProduct('S') },
-    { id: 'p2', title: 'Resistance Band — Medium', price: 22.9, image: placeholderProduct('M') },
-    { id: 'p3', title: 'Resistance Band — Large', price: 25.9, image: placeholderProduct('L') },
-  ]), []);
-
   const SUB_PRICE = 799; // subscription price in RUB
 
   const [bannerIdx, setBannerIdx] = useState(0);
@@ -80,15 +68,6 @@ export default function RehabMiniApp() {
   }, [paywallOpen, viewerCourse, banners.length]);
 
   const ping = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 1300); };
-
-  const addToCart = (p: any) => {
-    setCart(prev => {
-      const ex = prev.find(i => i.id === p.id);
-      const next = ex ? prev.map(i => i.id === p.id ? { ...i, qty: i.qty + 1 } : i) : [...prev, { ...p, qty: 1 }];
-      return next;
-    });
-    ping('Added to cart');
-  };
 
   const startExercise = (ex: Exercise) => {
     if (!selectedCourse) return;
@@ -199,41 +178,6 @@ export default function RehabMiniApp() {
           </div>
         )}
 
-        {tab === 'shop' && (
-          <div className="px-4 pt-4">
-            <h3 className="text-lg font-bold mb-4">Shop</h3>
-            <div className="grid gap-3">
-              {products.map((p) => (
-                <div key={p.id} className="rounded-2xl border border-neutral-800 bg-neutral-900 overflow-hidden">
-                  <div className="flex items-center gap-3 p-3">
-                    <img src={p.image} alt="" className="w-16 h-16 rounded-xl object-cover" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium line-clamp-2">{p.title}</div>
-                      <div className="mt-1 text-sm font-bold">${p.price.toFixed(2)}</div>
-                    </div>
-                    <button className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition flex items-center gap-1" onClick={() => addToCart(p)}>
-                      <i className="fa-solid fa-cart-plus"></i>
-                      <span>Add</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="h-3" />
-            <div className="fixed left-0 right-0 bottom-20 px-4">
-              <div className="bg-neutral-900 text-gray-100 rounded-2xl p-3 flex items-center justify-between shadow-xl max-w-lg mx-auto border border-neutral-800">
-                <div className="text-sm">
-                  <b>{cart.reduce((s, i) => s + i.qty, 0)}</b> items • <b>${cart.reduce((s, i) => s + i.qty * i.price, 0).toFixed(2)}</b>
-                </div>
-                <button className="px-4 py-2 bg-white/10 text-white rounded-xl text-sm font-medium hover:bg-white/20 transition flex items-center gap-2" onClick={() => setCheckoutOpen(true)}>
-                  <i className="fa-solid fa-credit-card"></i>
-                  <span>Checkout</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {tab === 'profile' && (
           <div className="px-4 pt-4 animate-fadeIn">
             <div className="flex items-center gap-4">
@@ -279,10 +223,9 @@ export default function RehabMiniApp() {
       <nav className="fixed bottom-3 left-0 right-0">
         <div className="max-w-lg mx-auto">
           <div className="mx-4 bg-black/70 backdrop-blur border border-neutral-800 shadow-lg rounded-2xl">
-            <div className="grid grid-cols-3 h-16 text-xs relative">
-              <ActivePill index={['home','shop','profile'].indexOf(tab)} />
+            <div className="grid grid-cols-2 h-16 text-xs relative">
+              <ActivePill index={['home','profile'].indexOf(tab)} count={2} />
               <TabButton label="Home" active={tab==='home'} onClick={()=>setTab('home')} icon={<i className="fa-solid fa-house"></i>} />
-              <TabButton label="Shop" active={tab==='shop'} onClick={()=>setTab('shop')} icon={<i className="fa-solid fa-store"></i>} />
               <TabButton label="Profile" active={tab==='profile'} onClick={()=>setTab('profile')} icon={<i className="fa-solid fa-user"></i>} />
             </div>
           </div>
@@ -292,13 +235,6 @@ export default function RehabMiniApp() {
       {viewerCourse && (
         <VideoScreen course={viewerCourse} title={viewerCourse.title} onClose={() => setViewerCourse(null)} />
       )}
-
-      <Modal open={checkoutOpen} onClose={() => setCheckoutOpen(false)}>
-        <div className="p-4">
-          <h3 className="text-base font-semibold mb-1">Checkout</h3>
-          <TinkoffPayForm amount={cart.reduce((s, i) => s + i.qty * i.price, 0)} />
-        </div>
-      </Modal>
 
       <Modal open={paywallOpen} onClose={() => setPaywallOpen(false)}>
         <div className="p-4">
