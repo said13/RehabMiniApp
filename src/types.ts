@@ -30,3 +30,14 @@ export type Lap = {
 export type Course = { id: string; title: string; laps: Lap[] };
 
 export type Category = { id: string; title: string; courses: Course[] };
+
+export type User = {
+  id: number;
+  fullName: string;
+  email: string;
+  phone?: string;
+  subscriptionPlan?: string;
+  subscriptionStatus?: string;
+  subscriptionExpiresAt?: string;
+  createdAt: string;
+};
