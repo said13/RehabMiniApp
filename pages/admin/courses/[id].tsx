@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import type { Course, Exercise } from 'src/types';
+import type { Course, Exercise, Lap } from 'src/types';
 import AdminLayout from 'src/components/admin/AdminLayout';
 
 const blankExercise: Exercise = {
@@ -12,12 +12,17 @@ const blankExercise: Exercise = {
   reps: 0,
 };
 
+const blankLap: Lap = { id: '', title: '', exercises: [] };
+
 export default function CourseDetail() {
   const router = useRouter();
   const { id } = router.query;
   const [course, setCourse] = useState<Course | null>(null);
   const [form, setForm] = useState<Exercise>(blankExercise);
   const [editIdx, setEditIdx] = useState<number | null>(null);
+  const [lapForm, setLapForm] = useState<Lap>(blankLap);
+  const [lapEditIdx, setLapEditIdx] = useState<number | null>(null);
+  const [activeLapIdx, setActiveLapIdx] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -35,6 +40,7 @@ export default function CourseDetail() {
       data.laps = [{ id: 'main', title: 'Main', exercises: [] }];
     }
     setCourse(data);
+    setActiveLapIdx(0);
   };
 
   const saveCourse = async (updated: Course) => {
@@ -45,17 +51,50 @@ export default function CourseDetail() {
     });
   };
 
+  const handleLapSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!course) return;
+    const laps = [...course.laps];
+    if (lapEditIdx !== null) {
+      laps[lapEditIdx] = { ...laps[lapEditIdx], id: lapForm.id, title: lapForm.title };
+    } else {
+      laps.push({ ...lapForm, exercises: [] });
+    }
+    const updated: Course = { ...course, laps };
+    await saveCourse(updated);
+    setLapEditIdx(null);
+    setLapForm(blankLap);
+    fetchCourse();
+  };
+
+  const handleLapEdit = (idx: number, lap: Lap) => {
+    setLapEditIdx(idx);
+    setLapForm({ id: lap.id, title: lap.title, exercises: [] });
+  };
+
+  const handleLapDelete = async (idx: number) => {
+    if (!course) return;
+    const laps = course.laps.filter((_, i) => i !== idx);
+    const updated: Course = { ...course, laps };
+    await saveCourse(updated);
+    setActiveLapIdx(0);
+    fetchCourse();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!course) return;
-    const lap = course.laps[0];
+    const lap = course.laps[activeLapIdx];
     const exercises = [...lap.exercises];
     if (editIdx !== null) {
       exercises[editIdx] = form;
     } else {
       exercises.push(form);
     }
-    const updated: Course = { ...course, laps: [{ ...lap, exercises }] };
+    const laps = course.laps.map((l, i) =>
+      i === activeLapIdx ? { ...lap, exercises } : l
+    );
+    const updated: Course = { ...course, laps };
     await saveCourse(updated);
     setEditIdx(null);
     setForm(blankExercise);
@@ -69,19 +108,54 @@ export default function CourseDetail() {
 
   const handleDelete = async (idx: number) => {
     if (!course) return;
-    const lap = course.laps[0];
+    const lap = course.laps[activeLapIdx];
     const exercises = lap.exercises.filter((_, i) => i !== idx);
-    const updated: Course = { ...course, laps: [{ ...lap, exercises }] };
+    const laps = course.laps.map((l, i) =>
+      i === activeLapIdx ? { ...lap, exercises } : l
+    );
+    const updated: Course = { ...course, laps };
     await saveCourse(updated);
     fetchCourse();
   };
+
+  const activeLap = course?.laps[activeLapIdx];
 
   return (
     <AdminLayout>
       <button onClick={() => router.back()}>Back</button>
       <h1>Training: {course?.title}</h1>
+
+      <h2>Complexes</h2>
       <ul>
-        {course?.laps[0]?.exercises.map((ex: Exercise, idx: number) => (
+        {course?.laps.map((lap, idx) => (
+          <li key={lap.id}>
+            <button onClick={() => setActiveLapIdx(idx)}>{lap.title}</button>
+            <button onClick={() => handleLapEdit(idx, lap)}>Edit</button>
+            <button onClick={() => handleLapDelete(idx)}>Delete</button>
+          </li>
+        ))}
+      </ul>
+      <h3 style={{ marginTop: 20 }}>{lapEditIdx !== null ? 'Edit' : 'Add'} Complex</h3>
+      <form onSubmit={handleLapSubmit}>
+        <input
+          value={lapForm.id}
+          onChange={(e) => setLapForm({ ...lapForm, id: e.target.value })}
+          placeholder="id"
+          disabled={lapEditIdx !== null}
+        />
+        <input
+          value={lapForm.title}
+          onChange={(e) => setLapForm({ ...lapForm, title: e.target.value })}
+          placeholder="title"
+        />
+        <button type="submit">{lapEditIdx !== null ? 'Update' : 'Create'}</button>
+      </form>
+
+      <h2 style={{ marginTop: 30 }}>
+        Exercises in {activeLap?.title}
+      </h2>
+      <ul>
+        {activeLap?.exercises.map((ex, idx) => (
           <li key={ex.id}>
             {ex.title} ({ex.mode})
             <button onClick={() => handleEdit(idx, ex)}>Edit</button>
@@ -89,7 +163,7 @@ export default function CourseDetail() {
           </li>
         ))}
       </ul>
-      <h2 style={{ marginTop: 30 }}>{editIdx !== null ? 'Edit' : 'Add'} Exercise</h2>
+      <h3 style={{ marginTop: 20 }}>{editIdx !== null ? 'Edit' : 'Add'} Exercise</h3>
       <form onSubmit={handleSubmit}>
         <input
           value={form.id}
