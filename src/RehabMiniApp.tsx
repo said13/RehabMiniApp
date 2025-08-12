@@ -10,6 +10,7 @@ import { Modal } from './components/Modal';
 import { DevTests } from './components/DevTests';
 import { sampleCategories } from './data/sampleCategories';
 import type { Category, Course, Exercise } from './types';
+import { TinkoffPayForm } from './components/TinkoffPayForm';
 
 export default function RehabMiniApp() {
   const envReady = useEnvReady();
@@ -25,6 +26,7 @@ export default function RehabMiniApp() {
   const [subActive, setSubActive] = useState<boolean>(false);
   const [cart, setCart] = useState<{ id: string; title: string; price: number; image: string; qty: number }[]>([]);
   const [tgUser, setTgUser] = useState<any | null>(null);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   useEffect(() => {
     if (!envReady) return;
@@ -221,7 +223,7 @@ export default function RehabMiniApp() {
                 <div className="text-sm">
                   <b>{cart.reduce((s, i) => s + i.qty, 0)}</b> items • <b>${cart.reduce((s, i) => s + i.qty * i.price, 0).toFixed(2)}</b>
                 </div>
-                <button className="px-4 py-2 bg-white/10 text-white rounded-xl text-sm font-medium hover:bg-white/20 transition flex items-center gap-2" onClick={() => ping('Checkout complete (mock)')}>
+                <button className="px-4 py-2 bg-white/10 text-white rounded-xl text-sm font-medium hover:bg-white/20 transition flex items-center gap-2" onClick={() => setCheckoutOpen(true)}>
                   <i className="fa-solid fa-credit-card"></i>
                   <span>Checkout</span>
                 </button>
@@ -277,6 +279,13 @@ export default function RehabMiniApp() {
       {viewerCourse && (
         <VideoScreen course={viewerCourse} title={viewerCourse.title} onClose={() => setViewerCourse(null)} />
       )}
+
+      <Modal open={checkoutOpen} onClose={() => setCheckoutOpen(false)}>
+        <div className="p-4">
+          <h3 className="text-base font-semibold mb-1">Checkout</h3>
+          <TinkoffPayForm amount={cart.reduce((s, i) => s + i.qty * i.price, 0)} />
+        </div>
+      </Modal>
 
       <Modal open={paywallOpen} onClose={() => setPaywallOpen(false)}>
         <div className="p-4">
