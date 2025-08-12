@@ -4,9 +4,10 @@ interface Props {
   amount: number;
   description?: string;
   onPaid?: () => void;
+  name?: string;
 }
 
-export function TinkoffPayForm({ amount, description, onPaid }: Props) {
+export function TinkoffPayForm({ amount, description, onPaid, name }: Props) {
   const formRef = useRef<HTMLFormElement | null>(null);
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -58,7 +59,11 @@ export function TinkoffPayForm({ amount, description, onPaid }: Props) {
       ) : (
         <input className="payform-tbank-row" type="text" placeholder="Описание заказа" name="description" />
       )}
-      <input className="payform-tbank-row" type="text" placeholder="ФИО плательщика" name="name" />
+      {name ? (
+        <input className="payform-tbank-row" type="hidden" name="name" value={name} />
+      ) : (
+        <input className="payform-tbank-row" type="text" placeholder="ФИО плательщика" name="name" />
+      )}
       <input className="payform-tbank-row" type="email" placeholder="E-mail" name="email" />
       <input className="payform-tbank-row" type="tel" placeholder="Контактный телефон" name="phone" />
       <input className="payform-tbank-row payform-tbank-btn" type="submit" value="Оплатить" />

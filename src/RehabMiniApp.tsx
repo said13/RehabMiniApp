@@ -5,21 +5,20 @@ import { safeLocalStorage } from './utils/localStorage';
 import { VideoScreen } from './components/VideoScreen';
 import { TabButton } from './components/TabButton';
 import { ActivePill } from './components/ActivePill';
-import { Modal } from './components/Modal';
 import { DevTests } from './components/DevTests';
 import { sampleCategories } from './data/sampleCategories';
 import type { Category, Course, Exercise } from './types';
-import { TinkoffPayForm } from './components/TinkoffPayForm';
+import { useRouter } from 'next/router';
 
 export default function RehabMiniApp() {
   const envReady = useEnvReady();
   const ls = safeLocalStorage();
+  const router = useRouter();
 
   const [tab, setTab] = useState<'home' | 'profile'>('home');
   const [viewerCourse, setViewerCourse] = useState<Course | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [paywallOpen, setPaywallOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   const [subActive, setSubActive] = useState<boolean>(false);
@@ -58,14 +57,12 @@ export default function RehabMiniApp() {
 
   const categories = useMemo(() => sampleCategories, []);
 
-  const SUB_PRICE = 799; // subscription price in RUB
-
   const [bannerIdx, setBannerIdx] = useState(0);
   useEffect(() => {
-    if (paywallOpen || viewerCourse) return;
+    if (viewerCourse) return;
     const t = setInterval(() => setBannerIdx(i => (i + 1) % banners.length), 4000);
     return () => clearInterval(t);
-  }, [paywallOpen, viewerCourse, banners.length]);
+  }, [viewerCourse, banners.length]);
 
   const ping = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 1300); };
 
@@ -92,7 +89,7 @@ export default function RehabMiniApp() {
                 <div className="px-4 pt-4">
                   <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory no-scrollbar">
                     {banners.map((b, idx) => (
-                      <article key={b.id} className={`min-w-[85%] ${b.color} text-white rounded-3xl p-5 snap-start shadow-lg hover:scale-[1.02] transition-transform`} onClick={() => (idx === 0 ? setPaywallOpen(true) : setBannerIdx(idx))}>
+                      <article key={b.id} className={`min-w-[85%] ${b.color} text-white rounded-3xl p-5 snap-start shadow-lg hover:scale-[1.02] transition-transform`} onClick={() => (idx === 0 ? router.push('/pay') : setBannerIdx(idx))}>
                         <h3 className="text-xl font-bold tracking-tight">{b.title}</h3>
                         <p className="text-sm opacity-90 mt-1">{b.text}</p>
                         <button className="mt-4 px-5 py-2 bg-white/90 text-gray-900 rounded-xl text-sm font-semibold shadow-sm hover:bg-white transition">{b.cta}</button>
@@ -205,11 +202,13 @@ export default function RehabMiniApp() {
                   <span>Cancel subscription</span>
                 </button>
               ) : (
-                <TinkoffPayForm
-                  amount={SUB_PRICE}
-                  description="Subscription"
-                  onPaid={() => { setSubActive(true); ping('Subscription activated'); }}
-                />
+                <button
+                  className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-500 transition flex items-center justify-center gap-2"
+                  onClick={() => router.push('/pay')}
+                >
+                  <i className="fa-solid fa-crown"></i>
+                  <span>Activate subscription</span>
+                </button>
               )}
               <button className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 rounded-xl text-sm transition flex items-center justify-center gap-2">
                 <i className="fa-solid fa-rotate-left"></i>
@@ -235,21 +234,6 @@ export default function RehabMiniApp() {
       {viewerCourse && (
         <VideoScreen course={viewerCourse} title={viewerCourse.title} onClose={() => setViewerCourse(null)} />
       )}
-
-      <Modal open={paywallOpen} onClose={() => setPaywallOpen(false)}>
-        <div className="p-4">
-          <h3 className="text-base font-semibold mb-1">Go PRO</h3>
-          <p className="text-sm text-gray-400 mb-3">Unlock all lessons and weekly updates. Cancel anytime.</p>
-          <div className="rounded-2xl bg-white/5 p-3 mb-3">
-            <div className="flex items-center justify-between text-sm"><span>Monthly</span><b>{SUB_PRICE} ₽</b></div>
-          </div>
-          <TinkoffPayForm
-            amount={SUB_PRICE}
-            description="Subscription"
-            onPaid={() => { setSubActive(true); setPaywallOpen(false); ping('Subscription activated'); }}
-          />
-        </div>
-      </Modal>
 
       {toast && (
         <div className="fixed bottom-24 left-0 right-0 flex justify-center animate-fadeIn">
