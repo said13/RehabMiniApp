@@ -48,7 +48,7 @@ export function TinkoffPayForm({ amount, description, onPaid, name }: Props) {
 
   return (
     <form className="payform-tbank" ref={formRef} onSubmit={onSubmit}>
-      <input className="payform-tbank-row" type="hidden" name="terminalkey" value="TBankTest" />
+      <input className="payform-tbank-row" type="hidden" name="terminalkey" value="1755011515658DEMO" />
       <input className="payform-tbank-row" type="hidden" name="frame" value="false" />
       <input className="payform-tbank-row" type="hidden" name="language" value="ru" />
       <input className="payform-tbank-row" type="hidden" name="receipt" value="" />
