@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { retrieveLaunchParams } from '@telegram-apps/sdk';
 import { useEnvReady } from './hooks/useEnvReady';
 import { safeLocalStorage } from './utils/localStorage';
@@ -25,6 +25,45 @@ export default function RehabMiniApp() {
   const [subActive, setSubActive] = useState<boolean>(false);
   const [cart, setCart] = useState<{ id: string; title: string; price: number; image: string; qty: number }[]>([]);
   const [tgUser, setTgUser] = useState<any | null>(null);
+
+  const formRef = useRef<HTMLFormElement>(null);
+  const terminalKey = process.env.NEXT_PUBLIC_TBANK_TERMINAL_KEY!;
+  const origin = process.env.NEXT_PUBLIC_APP_ORIGIN!;
+  const amount = 10000; // 100 ₽ in kopecks
+
+  const receiptValue = useMemo(
+    () =>
+      JSON.stringify({
+        Email: 'buyer@example.com',
+        Taxation: 'usn_income',
+        Items: [
+          {
+            Name: 'Подписка/услуга',
+            Price: amount,
+            Quantity: 1,
+            Amount: amount,
+            Tax: 'none',
+            PaymentMethod: 'full_prepayment',
+            PaymentObject: 'service',
+          },
+        ],
+      }),
+    [amount]
+  );
+
+  const pay = () => {
+    const form = formRef.current;
+    if (!form) return;
+    const orderInput = form.querySelector('input[name="order"]') as HTMLInputElement | null;
+    if (orderInput) orderInput.value = `ORDER-${Date.now()}`;
+    // @ts-ignore
+    if (window.Tinkoff?.Pay) {
+      // @ts-ignore
+      window.Tinkoff.Pay(form);
+    } else {
+      alert('Платёжный виджет ещё не загрузился. Попробуйте снова через секунду.');
+    }
+  };
 
   useEffect(() => {
     if (!envReady) return;
@@ -76,6 +115,22 @@ export default function RehabMiniApp() {
   }, [paywallOpen, viewerCourse, banners.length]);
 
   const ping = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 1300); };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    const res = url.searchParams.get('sub');
+    if (res === 'success') {
+      setSubActive(true);
+      ping('Subscription activated');
+    } else if (res === 'fail') {
+      ping('Payment failed');
+    }
+    if (res) {
+      url.searchParams.delete('sub');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, []);
 
   const addToCart = (p: any) => {
     setCart(prev => {
@@ -248,7 +303,14 @@ export default function RehabMiniApp() {
               </div>
             </div>
             <div className="mt-6 grid gap-3">
-              <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-500 transition flex items-center justify-center gap-2" onClick={() => { setSubActive(v => !v); ping(!subActive ? 'Subscription activated' : 'Subscription canceled'); }}>
+              <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-500 transition flex items-center justify-center gap-2" onClick={() => {
+                if (subActive) {
+                  setSubActive(false);
+                  ping('Subscription canceled');
+                } else {
+                  pay();
+                }
+              }}>
                 <i className="fa-solid fa-crown"></i>
                 <span>{subActive ? 'Cancel subscription' : 'Activate subscription'}</span>
               </button>
@@ -283,9 +345,9 @@ export default function RehabMiniApp() {
           <h3 className="text-base font-semibold mb-1">Go PRO</h3>
           <p className="text-sm text-gray-400 mb-3">Unlock all lessons and weekly updates. Cancel anytime.</p>
           <div className="rounded-2xl bg-white/5 p-3 mb-3">
-            <div className="flex items-center justify-between text-sm"><span>Monthly</span><b>$7.99</b></div>
+            <div className="flex items-center justify-between text-sm"><span>Monthly</span><b>100 ₽</b></div>
           </div>
-          <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-sm active:opacity-90 hover:bg-blue-500" onClick={() => { setSubActive(true); setPaywallOpen(false); ping('Subscription activated'); }}>Subscribe</button>
+          <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-sm active:opacity-90 hover:bg-blue-500" onClick={() => { setPaywallOpen(false); pay(); }}>Subscribe</button>
         </div>
       </Modal>
 
@@ -294,6 +356,15 @@ export default function RehabMiniApp() {
           <div className="bg-white/10 text-white text-sm px-4 py-2 rounded-full shadow-lg">{toast}</div>
         </div>
       )}
+
+      <form ref={formRef} name="TinkoffPayForm" style={{ display: 'none' }}>
+        <input type="hidden" name="terminalkey" value={terminalKey} />
+        <input type="hidden" name="amount" value={amount} />
+        <input type="hidden" name="order" value="" />
+        <input type="hidden" name="receipt" value={receiptValue} />
+        <input type="hidden" name="successurl" value={`${origin}/?sub=success`} />
+        <input type="hidden" name="failurl" value={`${origin}/?sub=fail`} />
+      </form>
 
       <DevTests />
     </div>
