@@ -42,8 +42,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           break;
         }
         console.log(`Inserting user ${userData.userID}`);
-        const inserted = await db.insert(users).values(userData).returning();
-        res.status(201).json(inserted[0]);
+        try {
+          const inserted = await db.insert(users).values(userData).returning();
+          console.log(`User ${userData.userID} inserted successfully`);
+          res.status(201).json(inserted[0]);
+        } catch (err) {
+          console.error(`Failed to insert user ${userData.userID}`, err);
+          throw err;
+        }
         break;
       }
       default:

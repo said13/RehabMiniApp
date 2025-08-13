@@ -54,11 +54,24 @@ export default function RehabMiniApp() {
       username: tgUser.username,
       email: '',
     };
+    console.log(`Attempting to register user ${body.userID}`);
     fetch('/api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
-    }).catch(() => {});
+    })
+      .then((res) => {
+        if (res.ok) {
+          console.log(`Successfully registered user ${body.userID}`);
+        } else {
+          console.error(
+            `Failed to register user ${body.userID}: ${res.status} ${res.statusText}`,
+          );
+        }
+      })
+      .catch((err) => {
+        console.error(`Error registering user ${body.userID}`, err);
+      });
   }, [tgUser]);
 
   useEffect(() => {
