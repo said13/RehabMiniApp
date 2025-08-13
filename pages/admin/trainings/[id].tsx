@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import type { Course, Exercise } from 'src/types';
+import type { Training, Exercise } from 'src/types';
 import AdminLayout from 'src/components/admin/AdminLayout';
 
 const blankExercise: Exercise = {
@@ -12,10 +12,10 @@ const blankExercise: Exercise = {
   reps: 0,
 };
 
-export default function CourseDetail() {
+export default function TrainingDetail() {
   const router = useRouter();
   const { id } = router.query;
-  const [course, setCourse] = useState<Course | null>(null);
+  const [training, setTraining] = useState<Training | null>(null);
   const [form, setForm] = useState<Exercise>(blankExercise);
   const [editIdx, setEditIdx] = useState<number | null>(null);
 
@@ -25,20 +25,20 @@ export default function CourseDetail() {
       router.replace('/admin/login');
       return;
     }
-    fetchCourse();
+    fetchTraining();
   }, [id]);
 
-  const fetchCourse = async () => {
-    const res = await fetch(`/api/courses/${id}`);
+  const fetchTraining = async () => {
+    const res = await fetch(`/api/trainings/${id}`);
     const data = await res.json();
-    if (!data.laps || !data.laps.length) {
-      data.laps = [{ id: 'main', title: 'Main', exercises: [] }];
+    if (!data.complexes || !data.complexes.length) {
+      data.complexes = [{ id: 'main', title: 'Main', exercises: [] }];
     }
-    setCourse(data);
+    setTraining(data);
   };
 
-  const saveCourse = async (updated: Course) => {
-    await fetch(`/api/courses/${updated.id}`, {
+  const saveTraining = async (updated: Training) => {
+    await fetch(`/api/trainings/${updated.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updated),
@@ -47,19 +47,19 @@ export default function CourseDetail() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!course) return;
-    const lap = course.laps[0];
-    const exercises = [...lap.exercises];
+    if (!training) return;
+    const complex = training.complexes[0];
+    const exercises = [...complex.exercises];
     if (editIdx !== null) {
       exercises[editIdx] = form;
     } else {
       exercises.push(form);
     }
-    const updated: Course = { ...course, laps: [{ ...lap, exercises }] };
-    await saveCourse(updated);
+    const updated: Training = { ...training, complexes: [{ ...complex, exercises }] };
+    await saveTraining(updated);
     setEditIdx(null);
     setForm(blankExercise);
-    fetchCourse();
+    fetchTraining();
   };
 
   const handleEdit = (idx: number, ex: Exercise) => {
@@ -68,20 +68,20 @@ export default function CourseDetail() {
   };
 
   const handleDelete = async (idx: number) => {
-    if (!course) return;
-    const lap = course.laps[0];
-    const exercises = lap.exercises.filter((_, i) => i !== idx);
-    const updated: Course = { ...course, laps: [{ ...lap, exercises }] };
-    await saveCourse(updated);
-    fetchCourse();
+    if (!training) return;
+    const complex = training.complexes[0];
+    const exercises = complex.exercises.filter((_, i) => i !== idx);
+    const updated: Training = { ...training, complexes: [{ ...complex, exercises }] };
+    await saveTraining(updated);
+    fetchTraining();
   };
 
   return (
     <AdminLayout>
       <button onClick={() => router.back()}>Back</button>
-      <h1>Training: {course?.title}</h1>
+      <h1>Training: {training?.title}</h1>
       <ul>
-        {course?.laps[0]?.exercises.map((ex: Exercise, idx: number) => (
+        {training?.complexes[0]?.exercises.map((ex: Exercise, idx: number) => (
           <li key={ex.id}>
             {ex.title} ({ex.mode})
             <button onClick={() => handleEdit(idx, ex)}>Edit</button>

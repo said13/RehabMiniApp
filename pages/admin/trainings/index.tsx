@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import type { Course } from 'src/types';
+import type { Training } from 'src/types';
 import AdminLayout from 'src/components/admin/AdminLayout';
 
 export default function AdminTrainings() {
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [trainings, setTrainings] = useState<Training[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -13,23 +13,23 @@ export default function AdminTrainings() {
       router.replace('/admin/login');
       return;
     }
-    fetchCourses();
+    fetchTrainings();
   }, []);
 
-  const fetchCourses = async () => {
-    const res = await fetch('/api/courses');
+  const fetchTrainings = async () => {
+    const res = await fetch('/api/trainings');
     const data = await res.json();
-    setCourses(data);
+    setTrainings(data);
   };
 
   return (
     <AdminLayout>
       <h1>Trainings</h1>
       <ul>
-        {courses.map((c) => (
-          <li key={c.id}>
-            {c.title}
-            <Link href={`/admin/courses/${c.id}`} style={{ marginLeft: 10 }}>
+        {trainings.map((t) => (
+          <li key={t.id}>
+            {t.title}
+            <Link href={`/admin/trainings/${t.id}`} style={{ marginLeft: 10 }}>
               Edit
             </Link>
           </li>

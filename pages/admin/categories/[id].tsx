@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import type { Category, Course } from 'src/types';
+import type { Category, Training } from 'src/types';
 import AdminLayout from 'src/components/admin/AdminLayout';
 
-const emptyCourse = { id: '', title: '' };
+const emptyTraining = { id: '', title: '' };
 
 export default function CategoryDetail() {
   const router = useRouter();
   const { id } = router.query;
   const [category, setCategory] = useState<Category | null>(null);
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [form, setForm] = useState(emptyCourse);
+  const [trainings, setTrainings] = useState<Training[]>([]);
+  const [form, setForm] = useState(emptyTraining);
   const [editId, setEditId] = useState<string | null>(null);
-  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [editingTraining, setEditingTraining] = useState<Training | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -28,46 +28,46 @@ export default function CategoryDetail() {
     const res = await fetch(`/api/categories/${id}`);
     const data = await res.json();
     setCategory(data);
-    setCourses(data.courses || []);
+    setTrainings(data.trainings || []);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!category) return;
-    if (editId && editingCourse) {
-      const updated: Course = { ...editingCourse, title: form.title };
-      await fetch(`/api/courses/${editId}`, {
+    if (editId && editingTraining) {
+      const updated: Training = { ...editingTraining, title: form.title };
+      await fetch(`/api/trainings/${editId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated),
       });
     } else {
-      const newCourse: Course = {
+      const newTraining: Training = {
         id: form.id,
         title: form.title,
-        laps: [{ id: 'main', title: 'Main', exercises: [] }],
+        complexes: [{ id: 'main', title: 'Main', exercises: [] }],
       };
-      await fetch('/api/courses', {
+      await fetch('/api/trainings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ categoryId: category.id, course: newCourse }),
+        body: JSON.stringify({ categoryId: category.id, training: newTraining }),
       });
     }
-    setForm(emptyCourse);
+    setForm(emptyTraining);
     setEditId(null);
-    setEditingCourse(null);
+    setEditingTraining(null);
     fetchCategory();
   };
 
-  const handleEdit = (course: Course) => {
-    setEditId(course.id);
-    setEditingCourse(course);
-    setForm({ id: course.id, title: course.title });
+  const handleEdit = (training: Training) => {
+    setEditId(training.id);
+    setEditingTraining(training);
+    setForm({ id: training.id, title: training.title });
   };
 
-  const handleDelete = async (courseId: string) => {
+  const handleDelete = async (trainingId: string) => {
     if (!confirm('Delete?')) return;
-    await fetch(`/api/courses/${courseId}`, { method: 'DELETE' });
+    await fetch(`/api/trainings/${trainingId}`, { method: 'DELETE' });
     fetchCategory();
   };
 
@@ -76,12 +76,12 @@ export default function CategoryDetail() {
       <button onClick={() => router.push('/admin/categories')}>Back</button>
       <h1>Category: {category?.title}</h1>
       <ul>
-        {courses.map((c) => (
-          <li key={c.id}>
-            {c.title} ({c.id}){' '}
-            <button onClick={() => handleEdit(c)}>Edit</button>
-            <button onClick={() => handleDelete(c.id)}>Delete</button>
-            <Link href={`/admin/courses/${c.id}`} style={{ marginLeft: 10 }}>
+        {trainings.map((t) => (
+          <li key={t.id}>
+            {t.title} ({t.id}){' '}
+            <button onClick={() => handleEdit(t)}>Edit</button>
+            <button onClick={() => handleDelete(t.id)}>Delete</button>
+            <Link href={`/admin/trainings/${t.id}`} style={{ marginLeft: 10 }}>
               Exercises
             </Link>
           </li>

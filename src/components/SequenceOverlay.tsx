@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useSequenceRunner } from '../hooks/useSequenceRunner';
-import type { Course } from '../types';
+import type { Training } from '../types';
 import { EmbedPlayer } from './EmbedPlayer';
 
-export function SequenceOverlay({ course, envReady }: { course: Course; envReady: boolean }) {
-  const s = useSequenceRunner(course);
-  const idxLabel = s.lap ? `${s.exIdx + 1}/${s.lap.exercises.length}` : '';
+export function SequenceOverlay({ training, envReady }: { training: Training; envReady: boolean }) {
+  const s = useSequenceRunner(training);
+  const idxLabel = s.complex ? `${s.exIdx + 1}/${s.complex.exercises.length}` : '';
   const [ttsEnabled, setTtsEnabled] = useState(false);
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export function SequenceOverlay({ course, envReady }: { course: Course; envReady
   return (
     <div className="p-2 -mx-2">
       <div className="flex items-center justify-between text-xs text-gray-400 px-2">
-        <div>{s.lap?.title}</div>
+        <div>{s.complex?.title}</div>
         <div>{idxLabel}</div>
       </div>
 

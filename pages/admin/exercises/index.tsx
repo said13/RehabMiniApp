@@ -1,16 +1,14 @@
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
-import type { Course, Exercise } from 'src/types';
+import type { Exercise } from 'src/types';
 import AdminLayout from 'src/components/admin/AdminLayout';
 
-interface FlatExercise extends Exercise {
-  courseId: string;
-  courseTitle: string;
+interface DBExercise extends Exercise {
+  complexId: string;
 }
 
 export default function AdminExercises() {
-  const [exercises, setExercises] = useState<FlatExercise[]>([]);
+  const [exercises, setExercises] = useState<DBExercise[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -22,15 +20,9 @@ export default function AdminExercises() {
   }, []);
 
   const fetchExercises = async () => {
-    const res = await fetch('/api/courses');
-    const data: Course[] = await res.json();
-    const flat: FlatExercise[] = [];
-    data.forEach((course) => {
-      course.laps[0]?.exercises.forEach((ex) => {
-        flat.push({ ...ex, courseId: course.id, courseTitle: course.title });
-      });
-    });
-    setExercises(flat);
+    const res = await fetch('/api/exercises');
+    const data = await res.json();
+    setExercises(data);
   };
 
   return (
@@ -39,10 +31,7 @@ export default function AdminExercises() {
       <ul>
         {exercises.map((ex) => (
           <li key={ex.id}>
-            {ex.title} – {ex.courseTitle}
-            <Link href={`/admin/courses/${ex.courseId}`} style={{ marginLeft: 10 }}>
-              Edit
-            </Link>
+            {ex.title} – {ex.complexId}
           </li>
         ))}
       </ul>
