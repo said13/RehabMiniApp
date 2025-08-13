@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import type { Category } from 'src/types';
 import AdminLayout from 'src/components/admin/AdminLayout';
 
-const emptyForm = { id: '', title: '' };
+const emptyForm = { name: '', coverUrl: '' };
 
 export default function AdminCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -48,7 +48,7 @@ export default function AdminCategories() {
 
   const handleEdit = (cat: Category) => {
     setEditId(cat.id);
-    setForm({ id: cat.id, title: cat.title });
+    setForm({ name: cat.name, coverUrl: cat.coverUrl });
   };
 
   const handleDelete = async (id: string) => {
@@ -66,7 +66,7 @@ export default function AdminCategories() {
             key={cat.id}
             className="flex items-center justify-between bg-neutral-900 px-4 py-2 rounded-lg"
           >
-            <span className="font-medium">{cat.title}</span>
+            <span className="font-medium">{cat.name}</span>
             <div className="flex items-center gap-3 text-sm">
               <button
                 className="text-blue-400 hover:underline"
@@ -95,16 +95,15 @@ export default function AdminCategories() {
       </h2>
       <form onSubmit={handleSubmit} className="space-y-3 max-w-sm">
         <input
-          value={form.id}
-          onChange={(e) => setForm({ ...form, id: e.target.value })}
-          placeholder="id"
-          disabled={!!editId}
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          placeholder="name"
           className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
         />
         <input
-          value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
-          placeholder="title"
+          value={form.coverUrl}
+          onChange={(e) => setForm({ ...form, coverUrl: e.target.value })}
+          placeholder="coverUrl"
           className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
         />
         <button

@@ -24,12 +24,15 @@ export const users = pgTable("users", {
 
 export const categories = pgTable("categories", {
   id: uuid("id").defaultRandom().primaryKey(),
-  title: varchar("title", { length: 256 }).notNull(),
+  name: varchar("name", { length: 256 }).notNull(),
+  coverUrl: varchar("cover_url", { length: 512 }).notNull(),
 });
 
 export const trainings = pgTable("trainings", {
   id: uuid("id").defaultRandom().primaryKey(),
-  title: varchar("title", { length: 256 }).notNull(),
+  name: varchar("name", { length: 256 }).notNull(),
+  description: varchar("description", { length: 1024 }).notNull(),
+  coverUrl: varchar("cover_url", { length: 512 }).notNull(),
   categoryId: uuid("category_id")
     .references(() => categories.id, { onDelete: "cascade" })
     .notNull(),

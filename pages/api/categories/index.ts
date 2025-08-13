@@ -9,8 +9,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
     }
     case 'POST': {
-      const { title } = req.body as { title: string };
-      const inserted = await db.insert(categories).values({ title }).returning();
+      const { name, coverUrl } = req.body as { name: string; coverUrl: string };
+      const inserted = await db
+        .insert(categories)
+        .values({ name, coverUrl })
+        .returning();
       res.status(201).json(inserted[0]);
       break;
     }

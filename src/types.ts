@@ -27,9 +27,20 @@ export type Complex = {
   restBetweenSec?: number;
 };
 
-export type Training = { id: string; title: string; complexes: Complex[] };
+export type Training = {
+  id: string;
+  name: string;
+  description: string;
+  coverUrl: string;
+  categoryId?: string;
+};
 
-export type Category = { id: string; title: string; trainings: Training[] };
+export type Category = {
+  id: string;
+  name: string;
+  coverUrl: string;
+  trainings?: Training[];
+};
 
 export type User = {
   id: number;

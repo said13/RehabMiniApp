@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import Link from 'next/link';
 import type { Category, Training } from 'src/types';
 import AdminLayout from 'src/components/admin/AdminLayout';
 
-const emptyTraining = { id: '', title: '' };
+const emptyTraining = { name: '', description: '', coverUrl: '' };
 
 export default function CategoryDetail() {
   const router = useRouter();
@@ -13,7 +12,6 @@ export default function CategoryDetail() {
   const [trainings, setTrainings] = useState<Training[]>([]);
   const [form, setForm] = useState(emptyTraining);
   const [editId, setEditId] = useState<string | null>(null);
-  const [editingTraining, setEditingTraining] = useState<Training | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -34,35 +32,31 @@ export default function CategoryDetail() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!category) return;
-    if (editId && editingTraining) {
-      const updated: Training = { ...editingTraining, title: form.title };
+    if (editId) {
       await fetch(`/api/trainings/${editId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated),
+        body: JSON.stringify({ ...form, categoryId: category.id }),
       });
     } else {
-      const newTraining: Training = {
-        id: form.id,
-        title: form.title,
-        complexes: [{ id: 'main', title: 'Main', exercises: [] }],
-      };
       await fetch('/api/trainings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ categoryId: category.id, training: newTraining }),
+        body: JSON.stringify({ ...form, categoryId: category.id }),
       });
     }
     setForm(emptyTraining);
     setEditId(null);
-    setEditingTraining(null);
     fetchCategory();
   };
 
   const handleEdit = (training: Training) => {
     setEditId(training.id);
-    setEditingTraining(training);
-    setForm({ id: training.id, title: training.title });
+    setForm({
+      name: training.name,
+      description: training.description,
+      coverUrl: training.coverUrl,
+    });
   };
 
   const handleDelete = async (trainingId: string) => {
@@ -74,31 +68,32 @@ export default function CategoryDetail() {
   return (
     <AdminLayout>
       <button onClick={() => router.push('/admin/categories')}>Back</button>
-      <h1>Category: {category?.title}</h1>
+      <h1>Category: {category?.name}</h1>
       <ul>
         {trainings.map((t) => (
           <li key={t.id}>
-            {t.title} ({t.id}){' '}
+            {t.name}
             <button onClick={() => handleEdit(t)}>Edit</button>
             <button onClick={() => handleDelete(t.id)}>Delete</button>
-            <Link href={`/admin/trainings/${t.id}`} style={{ marginLeft: 10 }}>
-              Exercises
-            </Link>
           </li>
         ))}
       </ul>
       <h2 style={{ marginTop: 30 }}>{editId ? 'Edit' : 'Add'} Training</h2>
       <form onSubmit={handleSubmit}>
         <input
-          value={form.id}
-          onChange={(e) => setForm({ ...form, id: e.target.value })}
-          placeholder="id"
-          disabled={!!editId}
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          placeholder="name"
         />
         <input
-          value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
-          placeholder="title"
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          placeholder="description"
+        />
+        <input
+          value={form.coverUrl}
+          onChange={(e) => setForm({ ...form, coverUrl: e.target.value })}
+          placeholder="coverUrl"
         />
         <button type="submit">{editId ? 'Update' : 'Create'}</button>
       </form>

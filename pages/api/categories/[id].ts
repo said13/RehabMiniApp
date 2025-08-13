@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { eq } from 'drizzle-orm';
-import { db, categories } from '../../../src/db';
+import { db, categories, trainings } from '../../../src/db';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query as { id: string };
@@ -12,14 +12,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         res.status(404).json({ message: 'Not found' });
         break;
       }
-      res.status(200).json(result[0]);
+      const cat = result[0];
+      const ts = await db.select().from(trainings).where(eq(trainings.categoryId, id));
+      res.status(200).json({ ...cat, trainings: ts });
       break;
     }
     case 'PUT': {
-      const { title } = req.body as { title: string };
+      const { name, coverUrl } = req.body as { name: string; coverUrl: string };
       const updated = await db
         .update(categories)
-        .set({ title })
+        .set({ name, coverUrl })
         .where(eq(categories.id, id))
         .returning();
       if (!updated.length) {
