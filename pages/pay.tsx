@@ -13,6 +13,9 @@ export default function Pay() {
 
   useEffect(() => {
     try {
+      if (!(window as any).TelegramGameProxy) {
+        (window as any).TelegramGameProxy = { receiveEvent: () => {} };
+      }
       const lp = retrieveLaunchParams();
       const u = lp?.initData?.user as any;
       if (u) {
