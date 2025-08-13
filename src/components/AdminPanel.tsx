@@ -166,27 +166,54 @@ function UsersSection() {
   }, [page]);
 
   const fetchUsers = async (p: number) => {
-    const res = await fetch(`/api/users?page=${p}&limit=${USERS_LIMIT}`);
-    const data = await res.json();
-    setUsers(data.users);
-    setTotal(data.total);
+    try {
+      const res = await fetch(`/api/users?page=${p}&limit=${USERS_LIMIT}`);
+      if (!res.ok) {
+        const text = await res.text();
+        console.error(`Failed to fetch users: ${res.status} ${res.statusText}`, text);
+        return;
+      }
+      const data = await res.json();
+      setUsers(data.users);
+      setTotal(data.total);
+    } catch (err) {
+      console.error('Error fetching users', err);
+    }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete?')) return;
-    await fetch(`/api/users/${id}`, { method: 'DELETE' });
-    fetchUsers(page);
+    try {
+      const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const text = await res.text();
+        console.error(`Failed to delete user ${id}: ${res.status} ${res.statusText}`, text);
+        return;
+      }
+      fetchUsers(page);
+    } catch (err) {
+      console.error(`Error deleting user ${id}`, err);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await fetch('/api/users', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    setForm({ userID: '', name: '', username: '', email: '' });
-    fetchUsers(page);
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        console.error(`Failed to create user: ${res.status} ${res.statusText}`, text);
+        return;
+      }
+      setForm({ userID: '', name: '', username: '', email: '' });
+      fetchUsers(page);
+    } catch (err) {
+      console.error('Error creating user', err);
+    }
   };
 
   const totalPages = Math.ceil(total / USERS_LIMIT) || 1;
