@@ -1,13 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { eq } from 'drizzle-orm';
-import { db, videos } from '../../../src/db';
+import { db, trainings } from '../../../src/db';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query as { id: string };
 
   switch (req.method) {
     case 'GET': {
-      const result = await db.select().from(videos).where(eq(videos.id, id)).limit(1);
+      const result = await db.select().from(trainings).where(eq(trainings.id, id)).limit(1);
       if (!result.length) {
         res.status(404).json({ message: 'Not found' });
         break;
@@ -16,11 +16,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
     }
     case 'PUT': {
-      const { title, url, thumbnail } = req.body as { title: string; url: string; thumbnail?: string };
+      const { title, categoryId } = req.body as { title: string; categoryId: string };
       const updated = await db
-        .update(videos)
-        .set({ title, url, thumbnail })
-        .where(eq(videos.id, id))
+        .update(trainings)
+        .set({ title, categoryId })
+        .where(eq(trainings.id, id))
         .returning();
       if (!updated.length) {
         res.status(404).json({ message: 'Not found' });
@@ -30,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
     }
     case 'DELETE': {
-      const deleted = await db.delete(videos).where(eq(videos.id, id)).returning();
+      const deleted = await db.delete(trainings).where(eq(trainings.id, id)).returning();
       if (!deleted.length) {
         res.status(404).json({ message: 'Not found' });
         break;

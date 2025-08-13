@@ -10,8 +10,7 @@ import { DebugConsole } from './components/DebugConsole';
 import { AdminPanel } from './components/AdminPanel';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useErrorLogger } from './hooks/useErrorLogger';
-import { sampleCategories } from './data/sampleCategories';
-import type { Category, Course, Exercise } from './types';
+import type { Category, Training, Exercise } from './types';
 import { useRouter } from 'next/router';
 
 export default function RehabMiniApp() {
@@ -20,9 +19,9 @@ export default function RehabMiniApp() {
   const router = useRouter();
 
   const [tab, setTab] = useState<'home' | 'profile' | 'debug' | 'admin'>('home');
-  const [viewerCourse, setViewerCourse] = useState<Course | null>(null);
+  const [viewerCourse, setViewerCourse] = useState<Training | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<Training | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const [subActive, setSubActive] = useState<boolean>(false);
@@ -91,7 +90,13 @@ export default function RehabMiniApp() {
     { id: 'spine', title: 'Healthy Back', text: '10‑min daily plan', cta: 'Explore', color: 'bg-gradient-to-r from-emerald-600 to-teal-700' },
   ]), []);
 
-  const categories = useMemo(() => sampleCategories, []);
+  const [categories, setCategories] = useState<Category[]>([]);
+  useEffect(() => {
+    fetch('/api/categories')
+      .then((res) => res.json())
+      .then((data) => setCategories(data))
+      .catch(() => {});
+  }, []);
 
   const [bannerIdx, setBannerIdx] = useState(0);
   useEffect(() => {
@@ -104,10 +109,10 @@ export default function RehabMiniApp() {
 
   const startExercise = (ex: Exercise) => {
     if (!selectedCourse) return;
-    const single: Course = {
+    const single: Training = {
       id: `${selectedCourse.id}-${ex.id}`,
       title: ex.title,
-      laps: [{ id: ex.id, title: ex.title, exercises: [ex] }],
+      complexes: [{ id: ex.id, title: ex.title, exercises: [ex] }],
     };
     setViewerCourse(single);
   };
@@ -162,10 +167,10 @@ export default function RehabMiniApp() {
                 </button>
                 <h4 className="text-lg font-bold mb-3">{selectedCategory.title}</h4>
                 <div className="grid gap-3">
-                  {selectedCategory.courses.map((c) => (
-                    <button key={c.id} className="relative text-left group active:scale-[.99] transition flex items-center gap-3 p-4 rounded-2xl bg-neutral-900 border border-neutral-800" onClick={() => setSelectedCourse(c)}>
+                  {selectedCategory.trainings.map((t) => (
+                    <button key={t.id} className="relative text-left group active:scale-[.99] transition flex items-center gap-3 p-4 rounded-2xl bg-neutral-900 border border-neutral-800" onClick={() => setSelectedCourse(t)}>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium leading-snug line-clamp-2">{c.title}</div>
+                        <div className="text-sm font-medium leading-snug line-clamp-2">{t.title}</div>
                       </div>
                       <span className="text-gray-500"><i className="fa-solid fa-chevron-right"></i></span>
                     </button>
@@ -187,7 +192,7 @@ export default function RehabMiniApp() {
                 </button>
                 <h4 className="text-lg font-bold mb-3">{selectedCourse.title}</h4>
                 <div className="grid gap-4">
-                  {selectedCourse.laps.map((l) => (
+                  {selectedCourse.complexes.map((l) => (
                     <div key={l.id} className="rounded-2xl bg-neutral-900 border border-neutral-800 p-4">
                       <div className="font-medium mb-2">{l.title}{l.rounds ? ` ×${l.rounds}` : ''}</div>
                       <div className="grid gap-2">
