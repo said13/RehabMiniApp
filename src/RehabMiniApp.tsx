@@ -39,6 +39,9 @@ export default function RehabMiniApp() {
 
   useEffect(() => {
     try {
+      if (!(window as any).TelegramGameProxy) {
+        (window as any).TelegramGameProxy = { receiveEvent: () => {} };
+      }
       const lp = retrieveLaunchParams();
       // lp.initData?.user contains Telegram user info if available
       const u = lp?.initData?.user as any;
