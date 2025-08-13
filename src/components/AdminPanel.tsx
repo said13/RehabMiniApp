@@ -2,15 +2,12 @@ import { useEffect, useState } from 'react';
 import type { User, Category } from '../types';
 
 const USERS_LIMIT = 10;
-const navItems = [
-  { id: 'dashboard', label: 'Dashboard' },
-  { id: 'users', label: 'Users' },
-  { id: 'categories', label: 'Categories' },
-];
+
+type Section = 'dashboard' | 'subscriptions' | 'users' | 'categories';
 
 export function AdminPanel() {
   const [authed, setAuthed] = useState(false);
-  const [section, setSection] = useState<'dashboard' | 'users' | 'categories'>('dashboard');
+  const [section, setSection] = useState<Section>('dashboard');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -33,10 +30,15 @@ export function AdminPanel() {
   let content: JSX.Element | null = null;
   if (section === 'users') content = <UsersSection />;
   else if (section === 'categories') content = <CategoriesSection />;
-  else content = <DashboardSection />;
+  else if (section === 'subscriptions') content = <SubscriptionsSection />;
+  else content = <DashboardSection onNavigate={setSection} />;
 
   return (
-    <AdminShell section={section} onNavigate={setSection} onLogout={handleLogout}>
+    <AdminShell
+      section={section}
+      onBack={() => setSection('dashboard')}
+      onLogout={handleLogout}
+    >
       {content}
     </AdminShell>
   );
@@ -79,78 +81,78 @@ function AdminLogin({ onSuccess }: { onSuccess: () => void }) {
 
 function AdminShell({
   section,
-  onNavigate,
+  onBack,
   onLogout,
   children,
 }: {
-  section: 'dashboard' | 'users' | 'categories';
-  onNavigate: (s: 'dashboard' | 'users' | 'categories') => void;
+  section: Section;
+  onBack: () => void;
   onLogout: () => void;
   children: React.ReactNode;
 }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
-      setSidebarOpen(true);
-    }
-  }, []);
-
-  const toggleSidebar = () => setSidebarOpen((prev) => !prev);
-  const closeSidebar = () => setSidebarOpen(false);
-
   return (
-    <div className="flex min-h-[calc(100dvh-5rem)] bg-neutral-950 text-gray-100">
-      <aside
-        className={`fixed inset-y-0 left-0 z-20 w-64 bg-neutral-900 border-r border-neutral-800 transform transition-transform md:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="p-4 text-xl font-bold">Admin</div>
-        <nav className="px-2 space-y-1">
-          {navItems.map((item) => (
+    <div className="min-h-[calc(100dvh-5rem)] bg-neutral-950 text-gray-100">
+      <header className="h-14 flex items-center justify-between px-4 border-b border-neutral-800 bg-neutral-950">
+        <div className="flex items-center gap-2">
+          {section !== 'dashboard' && (
             <button
-              key={item.id}
-              className={`block w-full text-left px-4 py-2 rounded-lg transition-colors ${
-                section === item.id ? 'bg-neutral-800 text-white' : 'text-gray-300 hover:bg-neutral-800'
-              }`}
-              onClick={() => {
-                onNavigate(item.id as any);
-                closeSidebar();
-              }}
+              className="text-sm text-gray-300 hover:text-white"
+              onClick={onBack}
             >
-              {item.label}
+              Back
             </button>
-          ))}
-          <button
-            className="w-full text-left px-4 py-2 rounded-lg text-gray-300 hover:bg-neutral-800"
-            onClick={onLogout}
-          >
-            Logout
-          </button>
-        </nav>
-      </aside>
-
-      {sidebarOpen && <div className="fixed inset-0 z-10 bg-black/50 md:hidden" onClick={closeSidebar} />}
-
-      <div className="flex-1 md:ml-64">
-        <header className="h-14 flex items-center px-4 border-b border-neutral-800 bg-neutral-950">
-          <button className="md:hidden mr-2" onClick={toggleSidebar}>
-            <i className="fa-solid fa-bars" />
-          </button>
+          )}
           <span className="font-semibold">Admin Panel</span>
-        </header>
-        <main className="p-4">{children}</main>
-      </div>
+        </div>
+        <button
+          className="text-sm text-gray-300 hover:text-white"
+          onClick={onLogout}
+        >
+          Logout
+        </button>
+      </header>
+      <main className="p-4">{children}</main>
     </div>
   );
 }
 
-function DashboardSection() {
+function DashboardSection({
+  onNavigate,
+}: {
+  onNavigate: (s: 'subscriptions' | 'categories' | 'users') => void;
+}) {
   return (
     <>
-      <h1 className="text-2xl font-bold mb-2">Dashboard</h1>
-      <p className="text-gray-300">Select a section from the menu to manage content.</p>
+      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
+      <div className="space-y-4 max-w-xs">
+        <button
+          className="w-full px-4 py-2 rounded-lg bg-neutral-800 text-center hover:bg-neutral-700"
+          onClick={() => onNavigate('subscriptions')}
+        >
+          Subscription Settings
+        </button>
+        <button
+          className="w-full px-4 py-2 rounded-lg bg-neutral-800 text-center hover:bg-neutral-700"
+          onClick={() => onNavigate('categories')}
+        >
+          Categories Settings
+        </button>
+        <button
+          className="w-full px-4 py-2 rounded-lg bg-neutral-800 text-center hover:bg-neutral-700"
+          onClick={() => onNavigate('users')}
+        >
+          Users Settings
+        </button>
+      </div>
+    </>
+  );
+}
+
+function SubscriptionsSection() {
+  return (
+    <>
+      <h1 className="text-2xl font-bold mb-2">Subscription Settings</h1>
+      <p className="text-gray-300">Manage subscription plans here.</p>
     </>
   );
 }
