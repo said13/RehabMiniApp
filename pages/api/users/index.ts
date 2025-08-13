@@ -4,6 +4,7 @@ import { db, users } from '../../../src/db';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   console.log(`[${new Date().toISOString()}] ${req.method} /api/users`);
+  console.log(`Database instance: ${db ? 'initialized' : 'not initialized'}`);
   try {
     switch (req.method) {
       case 'GET': {
