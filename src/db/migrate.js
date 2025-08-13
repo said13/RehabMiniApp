@@ -1,7 +1,8 @@
 const fs = require('fs');
+const path = require('path');
 
 async function runMigrations() {
-  const migrationsFolder = 'drizzle';
+  const migrationsFolder = path.resolve('drizzle');
   if (!fs.existsSync(migrationsFolder)) {
     console.warn(`Migrations folder "${migrationsFolder}" not found. Skipping migrations.`);
     return;

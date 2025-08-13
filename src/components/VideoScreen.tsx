@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSequenceRunner } from '../hooks/useSequenceRunner';
-import type { Course } from '../types';
+import type { Training } from '../types';
 import { PlaylistPlayer, type PlaylistItem } from './PlaylistPlayer';
 
-export function VideoScreen({ course, onClose, title }: { course: Course; onClose: () => void; title?: string }) {
-  const s = useSequenceRunner(course);
+export function VideoScreen({ training, onClose, title }: { training: Training; onClose: () => void; title?: string }) {
+  const s = useSequenceRunner(training);
 
   const [muted, setMuted] = useState(true);
 
@@ -14,8 +14,8 @@ export function VideoScreen({ course, onClose, title }: { course: Course; onClos
 
   // Flat list of all exercises for playlist support
   const playlist: PlaylistItem[] = useMemo(() => {
-    return course.laps.flatMap(l =>
-      l.exercises.map(ex => {
+    return training.complexes.flatMap(c =>
+      c.exercises.map(ex => {
         // Support full .m3u8 URL or Mux playback ID
         if (/\.m3u8($|\?)/.test(ex.video)) {
           return { url: ex.video, title: ex.title };
@@ -24,10 +24,10 @@ export function VideoScreen({ course, onClose, title }: { course: Course; onClos
         return { id: m ? m[1] : ex.video, title: ex.title };
       })
     );
-  }, [course]);
+  }, [training]);
 
-  const totalExercises = course.laps.reduce((sum, l) => sum + l.exercises.length, 0);
-  const beforeCurrent = course.laps.slice(0, s.lapIdx).reduce((sum, l) => sum + l.exercises.length, 0);
+  const totalExercises = training.complexes.reduce((sum, l) => sum + l.exercises.length, 0);
+  const beforeCurrent = training.complexes.slice(0, s.complexIdx).reduce((sum, l) => sum + l.exercises.length, 0);
   const currentIndex = beforeCurrent + s.exIdx;
   const idxLabel = s.ex ? `${currentIndex + 1}/${totalExercises}` : '';
 

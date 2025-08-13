@@ -19,7 +19,7 @@ export type Exercise = {
   cues?: Cue[];
 };
 
-export type Lap = {
+export type Complex = {
   id: string;
   title: string;
   exercises: Exercise[];
@@ -27,9 +27,9 @@ export type Lap = {
   restBetweenSec?: number;
 };
 
-export type Course = { id: string; title: string; laps: Lap[] };
+export type Training = { id: string; title: string; complexes: Complex[] };
 
-export type Category = { id: string; title: string; courses: Course[] };
+export type Category = { id: string; title: string; trainings: Training[] };
 
 export type User = {
   id: number;

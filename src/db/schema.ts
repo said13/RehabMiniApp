@@ -1,4 +1,14 @@
-import { pgTable, serial, varchar, timestamp, boolean } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  serial,
+  varchar,
+  timestamp,
+  boolean,
+  uuid,
+  integer,
+  jsonb,
+} from "drizzle-orm/pg-core";
+import type { Cue } from "../types";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -10,4 +20,49 @@ export const users = pgTable("users", {
   subscriptionPlan: varchar("subscription_plan", { length: 100 }),
   isSubscribed: boolean("is_subscribed").default(false),
   subscriptionExpiresAt: timestamp("subscription_expires_at"),
+});
+
+export const categories = pgTable("categories", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  title: varchar("title", { length: 256 }).notNull(),
+});
+
+export const trainings = pgTable("trainings", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  title: varchar("title", { length: 256 }).notNull(),
+  categoryId: uuid("category_id")
+    .references(() => categories.id, { onDelete: "cascade" })
+    .notNull(),
+});
+
+export const complexes = pgTable("complexes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  title: varchar("title", { length: 256 }).notNull(),
+  trainingId: uuid("training_id")
+    .references(() => trainings.id, { onDelete: "cascade" })
+    .notNull(),
+  rounds: integer("rounds"),
+  restBetweenSec: integer("rest_between_sec"),
+});
+
+export const exercises = pgTable("exercises", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  title: varchar("title", { length: 256 }).notNull(),
+  complexId: uuid("complex_id")
+    .references(() => complexes.id, { onDelete: "cascade" })
+    .notNull(),
+  video: varchar("video", { length: 512 }).notNull(),
+  thumbnail: varchar("thumbnail", { length: 512 }),
+  mode: varchar("mode", { length: 10 }).notNull(),
+  durationSec: integer("duration_sec"),
+  reps: integer("reps"),
+  restSec: integer("rest_sec"),
+  cues: jsonb("cues").$type<Cue[]>(),
+});
+
+export const videos = pgTable("videos", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  title: varchar("title", { length: 256 }).notNull(),
+  url: varchar("url", { length: 512 }).notNull(),
+  thumbnail: varchar("thumbnail", { length: 512 }),
 });

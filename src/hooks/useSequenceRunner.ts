@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
-import type { Course } from '../types';
+import type { Training } from '../types';
 
-export function useSequenceRunner(course: Course) {
-  const [lapIdx, setLapIdx] = useState(0);
+export function useSequenceRunner(training: Training) {
+  const [complexIdx, setComplexIdx] = useState(0);
   const [exIdx, setExIdx] = useState(0);
   const [roundIdx, setRoundIdx] = useState(0);
   const [mode, setMode] = useState<'playing' | 'rest' | 'paused' | 'complete'>('paused');
   const [remaining, setRemaining] = useState<number | null>(null);
-  const [pending, setPending] = useState<'exercise' | 'round' | 'lap' | 'complete' | null>(null);
+  const [pending, setPending] = useState<'exercise' | 'round' | 'complex' | 'complete' | null>(null);
 
-  const lap = course.laps[lapIdx];
-  const ex = lap?.exercises[exIdx];
+  const complex = training.complexes[complexIdx];
+  const ex = complex?.exercises[exIdx];
 
   useEffect(() => {
     if (mode !== 'playing' || !ex || ex.mode !== 'time') return;
@@ -43,37 +43,37 @@ export function useSequenceRunner(course: Course) {
       resetTimers();
       if (pending === 'exercise') setExIdx(i => i + 1);
       else if (pending === 'round') { setRoundIdx(r => r + 1); setExIdx(0); }
-      else if (pending === 'lap') { setLapIdx(l => l + 1); setRoundIdx(0); setExIdx(0); }
+      else if (pending === 'complex') { setComplexIdx(l => l + 1); setRoundIdx(0); setExIdx(0); }
       else if (pending === 'complete') setMode('complete');
       setPending(null);
       return;
     }
 
-    const curLap = lap;
+    const curComplex = complex;
     const curEx = ex;
-    if (!curLap || !curEx) { setMode('complete'); return; }
+    if (!curComplex || !curEx) { setMode('complete'); return; }
 
     const nextExIdx = exIdx + 1;
     if (curEx.restSec) {
       setMode('rest');
       setRemaining(curEx.restSec);
-      if (nextExIdx < curLap.exercises.length) setPending('exercise');
-      else if (roundIdx + 1 < (curLap.rounds || 1)) setPending('round');
-      else if (lapIdx + 1 < course.laps.length) setPending('lap');
+      if (nextExIdx < curComplex.exercises.length) setPending('exercise');
+      else if (roundIdx + 1 < (curComplex.rounds || 1)) setPending('round');
+      else if (complexIdx + 1 < training.complexes.length) setPending('complex');
       else setPending('complete');
       return;
     }
 
-    if (nextExIdx < curLap.exercises.length) {
+    if (nextExIdx < curComplex.exercises.length) {
       setExIdx(nextExIdx);
       resetTimers();
       return;
     }
 
-    if (roundIdx + 1 < (curLap.rounds || 1)) {
-      if (curLap.restBetweenSec) {
+    if (roundIdx + 1 < (curComplex.rounds || 1)) {
+      if (curComplex.restBetweenSec) {
         setMode('rest');
-        setRemaining(curLap.restBetweenSec);
+        setRemaining(curComplex.restBetweenSec);
         setPending('round');
       } else {
         setRoundIdx(r => r + 1);
@@ -83,8 +83,8 @@ export function useSequenceRunner(course: Course) {
       return;
     }
 
-    if (lapIdx + 1 < course.laps.length) {
-      setLapIdx(l => l + 1);
+    if (complexIdx + 1 < training.complexes.length) {
+      setComplexIdx(l => l + 1);
       setRoundIdx(0);
       setExIdx(0);
       resetTimers();
@@ -96,15 +96,15 @@ export function useSequenceRunner(course: Course) {
 
   function prev() {
     if (exIdx > 0) { setExIdx(i => i - 1); resetTimers(); return; }
-    if (roundIdx > 0) { setRoundIdx(r => r - 1); setExIdx(lap.exercises.length - 1); resetTimers(); return; }
-    if (lapIdx > 0) {
-      const prevLap = course.laps[lapIdx - 1];
-      setLapIdx(lapIdx - 1);
-      setRoundIdx((prevLap.rounds || 1) - 1);
-      setExIdx(prevLap.exercises.length - 1);
+    if (roundIdx > 0) { setRoundIdx(r => r - 1); setExIdx(complex.exercises.length - 1); resetTimers(); return; }
+    if (complexIdx > 0) {
+      const prevComplex = training.complexes[complexIdx - 1];
+      setComplexIdx(complexIdx - 1);
+      setRoundIdx((prevComplex.rounds || 1) - 1);
+      setExIdx(prevComplex.exercises.length - 1);
       resetTimers();
     }
   }
 
-  return { lapIdx, exIdx, roundIdx, lap, ex, mode, remaining, play, pause, next, prev, skipRest, addRest };
+  return { complexIdx, exIdx, roundIdx, complex, ex, mode, remaining, play, pause, next, prev, skipRest, addRest };
 }
