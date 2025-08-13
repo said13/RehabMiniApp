@@ -7,17 +7,20 @@ const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
+console.log('Running database migrations');
 runMigrations()
-  .catch((err) => {
-    console.error('Database migration failed', err);
-    process.exit(1);
+  .then(() => {
+    console.log('Database migrations complete');
+    return app.prepare();
   })
   .then(() => {
-    app.prepare().then(() => {
-      createServer((req, res) => {
-        handle(req, res);
-      }).listen(port, () => {
-        console.log(`> Server running on http://localhost:${port}`);
-      });
+    createServer((req, res) => {
+      handle(req, res);
+    }).listen(port, () => {
+      console.log(`> Server running on http://localhost:${port}`);
     });
+  })
+  .catch((err) => {
+    console.error('Failed to start server', err);
+    process.exit(1);
   });
