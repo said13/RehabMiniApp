@@ -75,15 +75,32 @@ export default function CategoryDetail() {
     <AdminLayout>
       <button onClick={() => router.push('/admin/categories')}>Back</button>
       <h1>Category: {category?.title}</h1>
-      <ul>
+      <ul className="space-y-2 mb-8">
         {courses.map((c) => (
-          <li key={c.id}>
-            {c.title} ({c.id}){' '}
-            <button onClick={() => handleEdit(c)}>Edit</button>
-            <button onClick={() => handleDelete(c.id)}>Delete</button>
-            <Link href={`/admin/courses/${c.id}`} style={{ marginLeft: 10 }}>
-              Exercises
+          <li
+            key={c.id}
+            className="flex items-center justify-between bg-neutral-900 px-4 py-2 rounded-lg"
+          >
+            <Link
+              href={`/admin/courses/${c.id}`}
+              className="font-medium hover:underline"
+            >
+              {c.title}
             </Link>
+            <div className="flex items-center gap-3 text-sm">
+              <button
+                className="text-blue-400 hover:underline"
+                onClick={() => handleEdit(c)}
+              >
+                Edit
+              </button>
+              <button
+                className="text-red-400 hover:underline"
+                onClick={() => handleDelete(c.id)}
+              >
+                Delete
+              </button>
+            </div>
           </li>
         ))}
       </ul>

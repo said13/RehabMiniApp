@@ -66,7 +66,12 @@ export default function AdminCategories() {
             key={cat.id}
             className="flex items-center justify-between bg-neutral-900 px-4 py-2 rounded-lg"
           >
-            <span className="font-medium">{cat.title}</span>
+            <Link
+              href={`/admin/categories/${cat.id}`}
+              className="font-medium hover:underline"
+            >
+              {cat.title}
+            </Link>
             <div className="flex items-center gap-3 text-sm">
               <button
                 className="text-blue-400 hover:underline"
@@ -80,12 +85,6 @@ export default function AdminCategories() {
               >
                 Delete
               </button>
-              <Link
-                href={`/admin/categories/${cat.id}`}
-                className="text-gray-400 hover:underline"
-              >
-                Trainings
-              </Link>
             </div>
           </li>
         ))}
