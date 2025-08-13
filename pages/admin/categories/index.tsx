@@ -59,33 +59,60 @@ export default function AdminCategories() {
 
   return (
     <AdminLayout>
-      <h1>Categories</h1>
-      <ul>
+      <h1 className="text-2xl font-bold mb-4">Categories</h1>
+      <ul className="space-y-2 mb-8">
         {categories.map((cat) => (
-          <li key={cat.id}>
-            {cat.title} ({cat.id}){' '}
-            <button onClick={() => handleEdit(cat)}>Edit</button>
-            <button onClick={() => handleDelete(cat.id)}>Delete</button>
-            <Link href={`/admin/categories/${cat.id}`} style={{ marginLeft: 10 }}>
-              Trainings
-            </Link>
+          <li
+            key={cat.id}
+            className="flex items-center justify-between bg-neutral-900 px-4 py-2 rounded-lg"
+          >
+            <span className="font-medium">{cat.title}</span>
+            <div className="flex items-center gap-3 text-sm">
+              <button
+                className="text-blue-400 hover:underline"
+                onClick={() => handleEdit(cat)}
+              >
+                Edit
+              </button>
+              <button
+                className="text-red-400 hover:underline"
+                onClick={() => handleDelete(cat.id)}
+              >
+                Delete
+              </button>
+              <Link
+                href={`/admin/categories/${cat.id}`}
+                className="text-gray-400 hover:underline"
+              >
+                Trainings
+              </Link>
+            </div>
           </li>
         ))}
       </ul>
-      <h2 style={{ marginTop: 30 }}>{editId ? 'Edit' : 'Add'} Category</h2>
-      <form onSubmit={handleSubmit}>
+      <h2 className="text-xl font-semibold mb-2">
+        {editId ? 'Edit' : 'Add'} Category
+      </h2>
+      <form onSubmit={handleSubmit} className="space-y-3 max-w-sm">
         <input
           value={form.id}
           onChange={(e) => setForm({ ...form, id: e.target.value })}
           placeholder="id"
           disabled={!!editId}
+          className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
         />
         <input
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
           placeholder="title"
+          className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
         />
-        <button type="submit">{editId ? 'Update' : 'Create'}</button>
+        <button
+          type="submit"
+          className="px-4 py-2 bg-blue-600 rounded-lg text-sm font-medium hover:bg-blue-500"
+        >
+          {editId ? 'Update' : 'Create'}
+        </button>
       </form>
     </AdminLayout>
   );
