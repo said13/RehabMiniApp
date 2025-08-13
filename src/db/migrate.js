@@ -27,3 +27,10 @@ async function runMigrations() {
 }
 
 module.exports = { runMigrations };
+
+if (require.main === module) {
+  runMigrations().catch((err) => {
+    console.error('Migration script failed', err);
+    process.exit(1);
+  });
+}
