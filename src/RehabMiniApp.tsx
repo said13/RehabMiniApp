@@ -6,6 +6,10 @@ import { VideoScreen } from './components/VideoScreen';
 import { TabButton } from './components/TabButton';
 import { ActivePill } from './components/ActivePill';
 import { DevTests } from './components/DevTests';
+import { DebugConsole } from './components/DebugConsole';
+import { AdminPanel } from './components/AdminPanel';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { useErrorLogger } from './hooks/useErrorLogger';
 import { sampleCategories } from './data/sampleCategories';
 import type { Category, Course, Exercise } from './types';
 import { useRouter } from 'next/router';
@@ -15,7 +19,7 @@ export default function RehabMiniApp() {
   const ls = safeLocalStorage();
   const router = useRouter();
 
-  const [tab, setTab] = useState<'home' | 'profile'>('home');
+  const [tab, setTab] = useState<'home' | 'profile' | 'debug' | 'admin'>('home');
   const [viewerCourse, setViewerCourse] = useState<Course | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -23,6 +27,7 @@ export default function RehabMiniApp() {
 
   const [subActive, setSubActive] = useState<boolean>(false);
   const [tgUser, setTgUser] = useState<any | null>(null);
+  const { logs, addLog } = useErrorLogger();
 
   useEffect(() => {
     if (!envReady) return;
@@ -92,6 +97,7 @@ export default function RehabMiniApp() {
   };
 
   return (
+    <ErrorBoundary addLog={addLog}>
     <div
       className="w-full min-h-[100dvh] bg-neutral-950 text-gray-100 flex flex-col font-sans"
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
@@ -232,15 +238,21 @@ export default function RehabMiniApp() {
             </div>
           </div>
         )}
+
+        {tab === 'debug' && <DebugConsole logs={logs} />}
+
+        {tab === 'admin' && <AdminPanel />}
       </main>
 
       <nav className="fixed bottom-3 left-0 right-0">
         <div className="max-w-lg mx-auto">
           <div className="mx-4 bg-black/70 backdrop-blur border border-neutral-800 shadow-lg rounded-2xl">
-            <div className="grid grid-cols-2 h-16 text-xs relative">
-              <ActivePill index={['home','profile'].indexOf(tab)} count={2} />
+            <div className="grid grid-cols-4 h-16 text-xs relative">
+              <ActivePill index={['home','profile','debug','admin'].indexOf(tab)} count={4} />
               <TabButton label="Home" active={tab==='home'} onClick={()=>setTab('home')} icon={<i className="fa-solid fa-house"></i>} />
               <TabButton label="Profile" active={tab==='profile'} onClick={()=>setTab('profile')} icon={<i className="fa-solid fa-user"></i>} />
+              <TabButton label="Debug" active={tab==='debug'} onClick={()=>setTab('debug')} icon={<i className="fa-solid fa-bug"></i>} />
+              <TabButton label="Admin" active={tab==='admin'} onClick={()=>setTab('admin')} icon={<i className="fa-solid fa-lock"></i>} />
             </div>
           </div>
         </div>
@@ -258,5 +270,6 @@ export default function RehabMiniApp() {
 
       <DevTests />
     </div>
+    </ErrorBoundary>
   );
 }
