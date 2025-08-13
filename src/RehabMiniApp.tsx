@@ -42,6 +42,21 @@ export default function RehabMiniApp() {
   }, []);
 
   useEffect(() => {
+    if (!tgUser) return;
+    const body = {
+      userID: String(tgUser.id),
+      name: [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' '),
+      username: tgUser.username,
+      email: '',
+    };
+    fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).catch(() => {});
+  }, [tgUser]);
+
+  useEffect(() => {
     if (!envReady) return;
     try {
       const wa = (window as any).Telegram?.WebApp;
