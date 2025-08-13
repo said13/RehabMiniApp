@@ -1,12 +1,10 @@
 import Link from 'next/link';
 
 const sections = [
-  { href: '/admin/videos', label: 'Videos', icon: 'fa-video' },
-  { href: '/admin/courses', label: 'Courses', icon: 'fa-book' },
-  { href: '/admin/exercises', label: 'Exercises', icon: 'fa-dumbbell' },
-  { href: '/admin/complexes', label: 'Complexes', icon: 'fa-layer-group' },
-  { href: '/admin/trainings', label: 'Trainings', icon: 'fa-person-running' },
   { href: '/admin/categories', label: 'Categories', icon: 'fa-tags' },
+  { href: '/admin/trainings', label: 'Trainings', icon: 'fa-person-running' },
+  { href: '/admin/complexes', label: 'Complexes', icon: 'fa-layer-group' },
+  { href: '/admin/exercises', label: 'Exercises', icon: 'fa-dumbbell' },
   { href: '/admin/users', label: 'Users', icon: 'fa-users' },
 ];
 
