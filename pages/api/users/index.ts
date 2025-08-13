@@ -2,9 +2,21 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { eq, sql } from 'drizzle-orm';
 import { db, users } from '../../../src/db';
 
+function setCors(res: NextApiResponse) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   console.log(`[${new Date().toISOString()}] ${req.method} /api/users`);
   console.log(`Database instance: ${db ? 'initialized' : 'not initialized'}`);
+  setCors(res);
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
   try {
     switch (req.method) {
       case 'GET': {
@@ -54,7 +66,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         break;
       }
       default:
-        res.setHeader('Allow', ['GET', 'POST']);
+        res.setHeader('Allow', ['GET', 'POST', 'OPTIONS']);
         res.status(405).end(`Method ${req.method} Not Allowed`);
     }
   } catch (error) {
