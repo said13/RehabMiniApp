@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
 import type { Category } from 'src/types';
 import AdminLayout from 'src/components/admin/AdminLayout';
@@ -64,28 +63,29 @@ export default function AdminCategories() {
         {categories.map((cat) => (
           <li
             key={cat.id}
-            className="flex items-center justify-between bg-neutral-900 px-4 py-2 rounded-lg"
+            onClick={() => router.push(`/admin/categories/${cat.id}`)}
+            className="group flex items-center justify-between bg-neutral-900 hover:bg-neutral-800 px-4 py-2 rounded-lg cursor-pointer"
           >
-            <span className="font-medium">{cat.title}</span>
+            <span className="font-medium group-hover:underline">{cat.title}</span>
             <div className="flex items-center gap-3 text-sm">
               <button
                 className="text-blue-400 hover:underline"
-                onClick={() => handleEdit(cat)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEdit(cat);
+                }}
               >
                 Edit
               </button>
               <button
                 className="text-red-400 hover:underline"
-                onClick={() => handleDelete(cat.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(cat.id);
+                }}
               >
                 Delete
               </button>
-              <Link
-                href={`/admin/categories/${cat.id}`}
-                className="text-gray-400 hover:underline"
-              >
-                Trainings
-              </Link>
             </div>
           </li>
         ))}

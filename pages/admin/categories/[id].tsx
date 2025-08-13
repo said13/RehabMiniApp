@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import Link from 'next/link';
 import type { Category, Course } from 'src/types';
 import AdminLayout from 'src/components/admin/AdminLayout';
 
@@ -75,15 +74,34 @@ export default function CategoryDetail() {
     <AdminLayout>
       <button onClick={() => router.push('/admin/categories')}>Back</button>
       <h1>Category: {category?.title}</h1>
-      <ul>
+      <ul className="space-y-2 mb-8">
         {courses.map((c) => (
-          <li key={c.id}>
-            {c.title} ({c.id}){' '}
-            <button onClick={() => handleEdit(c)}>Edit</button>
-            <button onClick={() => handleDelete(c.id)}>Delete</button>
-            <Link href={`/admin/courses/${c.id}`} style={{ marginLeft: 10 }}>
-              Exercises
-            </Link>
+          <li
+            key={c.id}
+            onClick={() => router.push(`/admin/courses/${c.id}`)}
+            className="group flex items-center justify-between bg-neutral-900 hover:bg-neutral-800 px-4 py-2 rounded-lg cursor-pointer"
+          >
+            <span className="font-medium group-hover:underline">{c.title}</span>
+            <div className="flex items-center gap-3 text-sm">
+              <button
+                className="text-blue-400 hover:underline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEdit(c);
+                }}
+              >
+                Edit
+              </button>
+              <button
+                className="text-red-400 hover:underline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(c.id);
+                }}
+              >
+                Delete
+              </button>
+            </div>
           </li>
         ))}
       </ul>
