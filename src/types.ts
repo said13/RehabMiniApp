@@ -35,6 +35,8 @@ export type Training = {
   categoryId?: string;
 };
 
+export type TrainingWithComplexes = Training & { complexes: Complex[] };
+
 export type Category = {
   id: string;
   name: string;
