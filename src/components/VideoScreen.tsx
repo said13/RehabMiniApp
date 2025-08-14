@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSequenceRunner } from '../hooks/useSequenceRunner';
-import type { Training } from '../types';
+import type { TrainingWithComplexes } from '../types';
 import { PlaylistPlayer, type PlaylistItem } from './PlaylistPlayer';
 
-export function VideoScreen({ training, onClose, title }: { training: Training; onClose: () => void; title?: string }) {
+export function VideoScreen({ training, onClose, title }: { training: TrainingWithComplexes; onClose: () => void; title?: string }) {
   const s = useSequenceRunner(training);
 
   const [muted, setMuted] = useState(true);

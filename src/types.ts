@@ -41,7 +41,7 @@ export type Category = {
   id: string;
   name: string;
   coverUrl: string;
-  trainings?: Training[];
+  trainings?: TrainingWithComplexes[];
 };
 
 export type User = {
