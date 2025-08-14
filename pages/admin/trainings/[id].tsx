@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import type { Training, Exercise } from 'src/types';
+import type { TrainingWithComplexes, Exercise, Complex } from 'src/types';
 import AdminLayout from 'src/components/admin/AdminLayout';
 
 const blankExercise: Exercise = {
@@ -15,7 +15,7 @@ const blankExercise: Exercise = {
 export default function TrainingDetail() {
   const router = useRouter();
   const { id } = router.query;
-  const [training, setTraining] = useState<Training | null>(null);
+  const [training, setTraining] = useState<TrainingWithComplexes | null>(null);
   const [form, setForm] = useState<Exercise>(blankExercise);
   const [editIdx, setEditIdx] = useState<number | null>(null);
 
@@ -30,33 +30,52 @@ export default function TrainingDetail() {
 
   const fetchTraining = async () => {
     const res = await fetch(`/api/trainings/${id}`);
-    const data = await res.json();
-    if (!data.complexes || !data.complexes.length) {
-      data.complexes = [{ id: 'main', title: 'Main', exercises: [] }];
+    const trainingData = await res.json();
+    let complexesRes = await fetch(`/api/complexes?trainingId=${id}`);
+    let complexesData = await complexesRes.json();
+    if (!complexesData.length) {
+      const createdRes = await fetch(`/api/complexes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Main', trainingId: id }),
+      });
+      const created = await createdRes.json();
+      complexesData = [created];
     }
-    setTraining(data);
-  };
-
-  const saveTraining = async (updated: Training) => {
-    await fetch(`/api/trainings/${updated.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updated),
-    });
+    const complexesWithExercises: Complex[] = await Promise.all(
+      complexesData.map(async (c: any) => {
+        const exRes = await fetch(`/api/exercises?complexId=${c.id}`);
+        const exData = await exRes.json();
+        return {
+          id: c.id,
+          title: c.title,
+          rounds: c.rounds,
+          restBetweenSec: c.restBetweenSec,
+          exercises: exData,
+        } as Complex;
+      })
+    );
+    setTraining({ ...trainingData, complexes: complexesWithExercises });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!training) return;
     const complex = training.complexes[0];
-    const exercises = [...complex.exercises];
     if (editIdx !== null) {
-      exercises[editIdx] = form;
+      const exId = complex.exercises[editIdx].id;
+      await fetch(`/api/exercises/${exId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, complexId: complex.id }),
+      });
     } else {
-      exercises.push(form);
+      await fetch(`/api/exercises`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, complexId: complex.id }),
+      });
     }
-    const updated: Training = { ...training, complexes: [{ ...complex, exercises }] };
-    await saveTraining(updated);
     setEditIdx(null);
     setForm(blankExercise);
     fetchTraining();
@@ -70,16 +89,15 @@ export default function TrainingDetail() {
   const handleDelete = async (idx: number) => {
     if (!training) return;
     const complex = training.complexes[0];
-    const exercises = complex.exercises.filter((_, i) => i !== idx);
-    const updated: Training = { ...training, complexes: [{ ...complex, exercises }] };
-    await saveTraining(updated);
+    const ex = complex.exercises[idx];
+    await fetch(`/api/exercises/${ex.id}`, { method: 'DELETE' });
     fetchTraining();
   };
 
   return (
     <AdminLayout>
       <button onClick={() => router.back()}>Back</button>
-      <h1>Training: {training?.title}</h1>
+      <h1>Training: {training?.name}</h1>
       <ul>
         {training?.complexes[0]?.exercises.map((ex: Exercise, idx: number) => (
           <li key={ex.id}>

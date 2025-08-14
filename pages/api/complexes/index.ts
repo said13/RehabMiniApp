@@ -1,11 +1,16 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { db, complexes } from '../../../src/db';
+import { eq } from 'drizzle-orm';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   switch (req.method) {
     case 'GET': {
-      const all = await db.select().from(complexes);
-      res.status(200).json(all);
+      const { trainingId } = req.query as { trainingId?: string };
+      const query = trainingId
+        ? db.select().from(complexes).where(eq(complexes.trainingId, trainingId))
+        : db.select().from(complexes);
+      const result = await query;
+      res.status(200).json(result);
       break;
     }
     case 'POST': {
