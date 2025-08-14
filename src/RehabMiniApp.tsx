@@ -268,7 +268,7 @@ export default function RehabMiniApp() {
       <nav className="fixed bottom-3 left-0 right-0">
         <div className="max-w-lg mx-auto">
           <div className="mx-4 bg-black/70 backdrop-blur border border-neutral-800 shadow-lg rounded-2xl">
-            <div className="grid grid-cols-4 h-16 text-xs relative">
+            <div className="grid grid-cols-4 h-16 text-xs relative gap-1 p-1">
               <ActivePill index={['home','profile','debug','admin'].indexOf(tab)} count={4} />
               <TabButton label="Home" active={tab==='home'} onClick={()=>setTab('home')} icon={<i className="fa-solid fa-house"></i>} />
               <TabButton label="Profile" active={tab==='profile'} onClick={()=>setTab('profile')} icon={<i className="fa-solid fa-user"></i>} />
