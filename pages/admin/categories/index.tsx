@@ -1,132 +1,20 @@
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import AdminLayout from 'src/components/admin/AdminLayout';
+import { CategoriesSection } from 'src/components/admin/CategoriesSection';
 
-type Category = {
-  id: string;
-  name: string;
-  coverUrl: string;
-};
-
-const emptyForm = { name: '', coverUrl: '' };
-
-export default function AdminCategories() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [form, setForm] = useState(emptyForm);
-  const [editId, setEditId] = useState<string | null>(null);
+export default function AdminCategoriesPage() {
   const router = useRouter();
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !window.localStorage.getItem('admin-token')) {
       router.replace('/admin/login');
-      return;
     }
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
-    const res = await fetch('/api/categories');
-    const data = await res.json();
-    setCategories(data);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editId) {
-      await fetch(`/api/categories/${editId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-    } else {
-      await fetch('/api/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-    }
-    setForm(emptyForm);
-    setEditId(null);
-    fetchCategories();
-  };
-
-  const handleEdit = (cat: Category) => {
-    setEditId(cat.id);
-    setForm({ name: cat.name, coverUrl: cat.coverUrl });
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete?')) return;
-    await fetch(`/api/categories/${id}`, { method: 'DELETE' });
-    fetchCategories();
-  };
+  }, [router]);
 
   return (
     <AdminLayout>
-      <h1 className="text-2xl font-bold mb-4">Categories</h1>
-      <ul className="space-y-2 mb-8">
-        {categories.map((cat) => (
-          <li
-            key={cat.id}
-            className="flex items-center justify-between bg-neutral-900 px-4 py-2 rounded-lg"
-          >
-            <div className="flex items-center gap-3">
-              {cat.coverUrl && (
-                <img
-                  src={cat.coverUrl}
-                  alt={cat.name}
-                  className="w-10 h-10 object-cover rounded"
-                />
-              )}
-              <span className="font-medium">{cat.name}</span>
-            </div>
-            <div className="flex items-center gap-3 text-sm">
-              <button
-                className="text-blue-400 hover:underline"
-                onClick={() => handleEdit(cat)}
-              >
-                Edit
-              </button>
-              <button
-                className="text-red-400 hover:underline"
-                onClick={() => handleDelete(cat.id)}
-              >
-                Delete
-              </button>
-              <Link
-                href={`/admin/categories/${cat.id}`}
-                className="text-gray-400 hover:underline"
-              >
-                Trainings
-              </Link>
-            </div>
-          </li>
-        ))}
-      </ul>
-      <h2 className="text-xl font-semibold mb-2">
-        {editId ? 'Edit' : 'Add'} Category
-      </h2>
-      <form onSubmit={handleSubmit} className="space-y-3 max-w-sm">
-        <input
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          placeholder="name"
-          className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
-        />
-        <input
-          value={form.coverUrl}
-          onChange={(e) => setForm({ ...form, coverUrl: e.target.value })}
-          placeholder="coverUrl"
-          className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
-        />
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-600 rounded-lg text-sm font-medium hover:bg-blue-500"
-        >
-          {editId ? 'Update' : 'Create'}
-        </button>
-      </form>
+      <CategoriesSection />
     </AdminLayout>
   );
 }
