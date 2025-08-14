@@ -17,6 +17,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Check DATABASE_URL presence
+        run: node -e "console.log('HAS_DB_URL=', Boolean(process.env.DATABASE_URL))"
+
       - run: npm run db:push
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
