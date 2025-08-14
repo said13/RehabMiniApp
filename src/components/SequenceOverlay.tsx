@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useSequenceRunner } from '../hooks/useSequenceRunner';
-import type { Training } from '../types';
+import type { TrainingWithComplexes } from '../types';
 import { EmbedPlayer } from './EmbedPlayer';
 
-export function SequenceOverlay({ training, envReady }: { training: Training; envReady: boolean }) {
+export function SequenceOverlay({ training, envReady }: { training: TrainingWithComplexes; envReady: boolean }) {
   const s = useSequenceRunner(training);
   const idxLabel = s.complex ? `${s.exIdx + 1}/${s.complex.exercises.length}` : '';
   const [ttsEnabled, setTtsEnabled] = useState(false);

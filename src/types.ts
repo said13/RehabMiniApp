@@ -35,7 +35,9 @@ export type Training = {
   categoryId?: string;
 };
 
-export type TrainingWithComplexes = Training & { complexes: Complex[] };
+export interface TrainingWithComplexes extends Training {
+  complexes: Complex[];
+}
 
 export type Category = {
   id: string;

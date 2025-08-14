@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import type { Training } from '../types';
+import type { TrainingWithComplexes } from '../types';
 
-export function useSequenceRunner(training: Training) {
+export function useSequenceRunner(training: TrainingWithComplexes) {
   const [complexIdx, setComplexIdx] = useState(0);
   const [exIdx, setExIdx] = useState(0);
   const [roundIdx, setRoundIdx] = useState(0);
