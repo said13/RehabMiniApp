@@ -28,7 +28,7 @@ export default function AdminTrainings() {
       <ul>
         {trainings.map((t) => (
           <li key={t.id}>
-            {t.title}
+            {t.name}
             <Link href={`/admin/trainings/${t.id}`} style={{ marginLeft: 10 }}>
               Edit
             </Link>
