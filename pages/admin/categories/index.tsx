@@ -66,8 +66,13 @@ export default function AdminCategories() {
             key={cat.id}
             className="flex items-center justify-between bg-neutral-900 px-4 py-2 rounded-lg"
           >
-            <span className="font-medium">{cat.title}</span>
-            <div className="flex items-center gap-3 text-sm">
+            <Link href={`/admin/categories/${cat.id}`} className="flex-1">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded bg-neutral-800" />
+                <span className="font-medium">{cat.title}</span>
+              </div>
+            </Link>
+            <div className="flex items-center gap-3 text-sm ml-4">
               <button
                 className="text-blue-400 hover:underline"
                 onClick={() => handleEdit(cat)}
@@ -80,12 +85,6 @@ export default function AdminCategories() {
               >
                 Delete
               </button>
-              <Link
-                href={`/admin/categories/${cat.id}`}
-                className="text-gray-400 hover:underline"
-              >
-                Trainings
-              </Link>
             </div>
           </li>
         ))}
