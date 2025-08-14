@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { User } from '../types';
 import { CategoriesSection } from './admin/CategoriesSection';
+import { SubscriptionsSection } from './admin/SubscriptionsSection';
+import { DashboardSection } from './admin/DashboardSection';
 
 const USERS_LIMIT = 10;
 
@@ -114,47 +116,6 @@ function AdminShell({
       </header>
       <main className="p-4">{children}</main>
     </div>
-  );
-}
-
-function DashboardSection({
-  onNavigate,
-}: {
-  onNavigate: (s: 'subscriptions' | 'categories' | 'users') => void;
-}) {
-  return (
-    <>
-      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-      <div className="space-y-4 max-w-xs">
-        <button
-          className="w-full px-4 py-2 rounded-lg bg-neutral-800 text-center hover:bg-neutral-700"
-          onClick={() => onNavigate('subscriptions')}
-        >
-          Subscription Settings
-        </button>
-        <button
-          className="w-full px-4 py-2 rounded-lg bg-neutral-800 text-center hover:bg-neutral-700"
-          onClick={() => onNavigate('categories')}
-        >
-          Categories Settings
-        </button>
-        <button
-          className="w-full px-4 py-2 rounded-lg bg-neutral-800 text-center hover:bg-neutral-700"
-          onClick={() => onNavigate('users')}
-        >
-          Users Settings
-        </button>
-      </div>
-    </>
-  );
-}
-
-function SubscriptionsSection() {
-  return (
-    <>
-      <h1 className="text-2xl font-bold mb-2">Subscription Settings</h1>
-      <p className="text-gray-300">Manage subscription plans here.</p>
-    </>
   );
 }
 
