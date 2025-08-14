@@ -1,40 +1,21 @@
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import type { Training } from 'src/types';
 import AdminLayout from 'src/components/admin/AdminLayout';
+import { TrainingsSection } from 'src/components/admin/TrainingsSection';
 
-export default function AdminTrainings() {
-  const [trainings, setTrainings] = useState<Training[]>([]);
+export default function AdminTrainingsPage() {
   const router = useRouter();
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !window.localStorage.getItem('admin-token')) {
       router.replace('/admin/login');
-      return;
     }
-    fetchTrainings();
-  }, []);
-
-  const fetchTrainings = async () => {
-    const res = await fetch('/api/trainings');
-    const data = await res.json();
-    setTrainings(data);
-  };
+  }, [router]);
 
   return (
     <AdminLayout>
-      <h1>Trainings</h1>
-      <ul>
-        {trainings.map((t) => (
-          <li key={t.id}>
-            {t.title}
-            <Link href={`/admin/trainings/${t.id}`} style={{ marginLeft: 10 }}>
-              Edit
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <TrainingsSection />
     </AdminLayout>
   );
 }
+
