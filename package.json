@@ -4,10 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "drizzle-kit push --force && next build",
+    "build": "next build",
     "start": "node server.js",
-    "test": "echo \"No tests\"",
-    "db:push": "drizzle-kit push --force"
+    "test": "echo \"No tests\""
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",
