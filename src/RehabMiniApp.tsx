@@ -10,7 +10,7 @@ import { DebugConsole } from './components/DebugConsole';
 import { AdminPanel } from './components/AdminPanel';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useErrorLogger } from './hooks/useErrorLogger';
-import type { Category, TrainingWithComplexes, Exercise } from './types';
+import type { Category, TrainingWithComplexes, Exercise, Training } from './types';
 import { useRouter } from 'next/router';
 
 export default function RehabMiniApp() {
@@ -120,6 +120,21 @@ export default function RehabMiniApp() {
     setViewerCourse(single);
   };
 
+  const handleSelectCourse = async (t: Training) => {
+    try {
+      const complexes = await fetch(`/api/complexes?trainingId=${t.id}`).then(res => res.json());
+      const complexesWithExercises = await Promise.all(
+        complexes.map(async (c: any) => {
+          const exercises = await fetch(`/api/exercises?complexId=${c.id}`).then(res => res.json());
+          return { ...c, exercises };
+        })
+      );
+      setSelectedCourse({ ...t, complexes: complexesWithExercises });
+    } catch (err) {
+      console.error('Failed to load training complexes', err);
+    }
+  };
+
   return (
     <ErrorBoundary addLog={addLog}>
     <div
@@ -163,15 +178,15 @@ export default function RehabMiniApp() {
               </>
             )}
             {selectedCategory && !selectedCourse && (
-              <div className="px-4 pt-4">
-                <button className="mb-4 text-sm text-gray-400 flex items-center gap-1" onClick={() => setSelectedCategory(null)}>
+                <div className="px-4 pt-4">
+                  <button className="mb-4 text-sm text-gray-400 flex items-center gap-1" onClick={() => setSelectedCategory(null)}>
                   <i className="fa-solid fa-chevron-left"></i>
                   <span>Back</span>
                 </button>
                 <h4 className="text-lg font-bold mb-3">{selectedCategory.name}</h4>
-                <div className="grid gap-3">
-                  {selectedCategory.trainings.map((t) => (
-                    <button key={t.id} className="relative text-left group active:scale-[.99] transition flex items-center gap-3 p-4 rounded-2xl bg-neutral-900 border border-neutral-800" onClick={() => setSelectedCourse(t)}>
+                  <div className="grid gap-3">
+                    {selectedCategory.trainings?.map((t) => (
+                      <button key={t.id} className="relative text-left group active:scale-[.99] transition flex items-center gap-3 p-4 rounded-2xl bg-neutral-900 border border-neutral-800" onClick={() => handleSelectCourse(t)}>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium leading-snug line-clamp-2">{t.name}</div>
                       </div>
