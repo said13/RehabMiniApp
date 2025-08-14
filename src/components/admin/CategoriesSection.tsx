@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 import type { Category } from '../../types';
 
 export function CategoriesSection() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [form, setForm] = useState({ id: '', title: '' });
   const [editId, setEditId] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     fetchCategories();
@@ -54,19 +56,26 @@ export function CategoriesSection() {
         {categories.map((cat) => (
           <li
             key={cat.id}
-            className="flex items-center justify-between bg-neutral-900 px-4 py-2 rounded-lg"
+            className="flex items-center justify-between bg-neutral-900 px-4 py-2 rounded-lg cursor-pointer"
+            onClick={() => router.push(`/admin/categories/${cat.id}`)}
           >
             <span className="font-medium">{cat.title}</span>
             <div className="flex items-center gap-3 text-sm">
               <button
                 className="text-blue-400 hover:underline"
-                onClick={() => handleEdit(cat)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEdit(cat);
+                }}
               >
                 Edit
               </button>
               <button
                 className="text-red-400 hover:underline"
-                onClick={() => handleDelete(cat.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(cat.id);
+                }}
               >
                 Delete
               </button>
