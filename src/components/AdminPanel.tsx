@@ -299,7 +299,7 @@ function UsersSection() {
 
 function CategoriesSection() {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [form, setForm] = useState({ id: '', title: '' });
+  const [form, setForm] = useState({ id: '', name: '' });
   const [editId, setEditId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -327,14 +327,14 @@ function CategoriesSection() {
         body: JSON.stringify(form),
       });
     }
-    setForm({ id: '', title: '' });
+    setForm({ id: '', name: '' });
     setEditId(null);
     fetchCategories();
   };
 
   const handleEdit = (cat: Category) => {
     setEditId(cat.id);
-    setForm({ id: cat.id, title: cat.title });
+    setForm({ id: cat.id, name: cat.name });
   };
 
   const handleDelete = async (id: string) => {
@@ -352,7 +352,7 @@ function CategoriesSection() {
             key={cat.id}
             className="flex items-center justify-between bg-neutral-900 px-4 py-2 rounded-lg"
           >
-            <span className="font-medium">{cat.title}</span>
+            <span className="font-medium">{cat.name}</span>
             <div className="flex items-center gap-3 text-sm">
               <button
                 className="text-blue-400 hover:underline"
@@ -380,9 +380,9 @@ function CategoriesSection() {
           className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
         />
         <input
-          value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
-          placeholder="title"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          placeholder="name"
           className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
         />
         <button
