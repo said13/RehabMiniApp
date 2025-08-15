@@ -6,9 +6,7 @@ import {
   boolean,
   uuid,
   integer,
-  jsonb,
 } from "drizzle-orm/pg-core";
-import type { Cue } from "../types";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -57,12 +55,4 @@ export const exercises = pgTable("exercises", {
   durationSec: integer("duration_sec"),
   reps: integer("reps"),
   restSec: integer("rest_sec"),
-  cues: jsonb("cues").$type<Cue[]>(),
-});
-
-export const videos = pgTable("videos", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  title: varchar("title", { length: 256 }).notNull(),
-  url: varchar("url", { length: 512 }).notNull(),
-  thumbnail: varchar("thumbnail", { length: 512 }),
 });
