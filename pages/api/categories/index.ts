@@ -1,7 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { db, categories } from '../../../src/db';
+import { handleCors } from '../../../src/utils/cors';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (handleCors(req, res)) return;
+
   switch (req.method) {
     case 'GET': {
       const all = await db.select().from(categories);

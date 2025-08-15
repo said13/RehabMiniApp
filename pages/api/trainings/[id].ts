@@ -1,19 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { eq } from 'drizzle-orm';
 import { db, trainings } from '../../../src/db';
+import { handleCors } from '../../../src/utils/cors';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (handleCors(req, res)) return;
+
   const { id } = req.query as { id: string };
 
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
   switch (req.method) {
-    case 'OPTIONS': {
-      res.status(200).end();
-      break;
-    }
     case 'GET': {
       const result = await db.select().from(trainings).where(eq(trainings.id, id)).limit(1);
       if (!result.length) {
@@ -52,7 +47,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
     }
     default:
-      res.setHeader('Allow', ['GET', 'PUT', 'DELETE', 'OPTIONS']);
+      res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
       res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
