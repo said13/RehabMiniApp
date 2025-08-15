@@ -4,7 +4,7 @@ import type { Category } from '../../types';
 
 export function CategoriesSection() {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [form, setForm] = useState({ id: '', title: '' });
+  const [form, setForm] = useState({ title: '', coverUrl: '' });
   const [editId, setEditId] = useState<string | null>(null);
   const router = useRouter();
 
@@ -20,27 +20,28 @@ export function CategoriesSection() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const payload = { title: form.title, coverUrl: form.coverUrl };
     if (editId) {
       await fetch(`/api/categories/${editId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
     } else {
       await fetch('/api/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
     }
-    setForm({ id: '', title: '' });
+    setForm({ title: '', coverUrl: '' });
     setEditId(null);
     fetchCategories();
   };
 
   const handleEdit = (cat: Category) => {
     setEditId(cat.id);
-    setForm({ id: cat.id, title: cat.title });
+    setForm({ title: cat.title, coverUrl: cat.coverUrl });
   };
 
   const handleDelete = async (id: string) => {
@@ -86,16 +87,15 @@ export function CategoriesSection() {
       <h2 className="text-xl font-semibold mb-2">{editId ? 'Edit' : 'Add'} Category</h2>
       <form onSubmit={handleSubmit} className="space-y-3 max-w-sm">
         <input
-          value={form.id}
-          onChange={(e) => setForm({ ...form, id: e.target.value })}
-          placeholder="id"
-          disabled={!!editId}
-          className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
-        />
-        <input
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
           placeholder="title"
+          className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
+        />
+        <input
+          value={form.coverUrl}
+          onChange={(e) => setForm({ ...form, coverUrl: e.target.value })}
+          placeholder="cover URL"
           className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
         />
         <button
