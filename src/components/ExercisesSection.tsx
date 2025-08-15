@@ -1,15 +1,8 @@
-import type { Training, Exercise } from '../types';
-
-interface Complex {
-  id: string;
-  title: string;
-  rounds?: number;
-  exercises: Exercise[];
-}
+import type { Training, Exercise, ComplexWithExercises } from '../types';
 
 interface ExercisesSectionProps {
   course: Training;
-  complexes: Complex[];
+  complexes: ComplexWithExercises[];
   onBack: () => void;
   onStartCourse: () => void;
   onStartExercise: (ex: Exercise) => void;

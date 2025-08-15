@@ -18,6 +18,11 @@ export type Complex = {
   rounds: number;
 };
 
+export type ComplexWithExercises = Complex & {
+  title: string;
+  exercises: Exercise[];
+};
+
 export type Training = {
   id: string;
   categoryId: string;

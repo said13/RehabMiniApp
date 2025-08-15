@@ -1,18 +1,11 @@
 import { TrainingsSection } from './TrainingsSection';
 import { ExercisesSection } from './ExercisesSection';
-import type { Category, Training, Exercise } from '../types';
-
-interface Complex {
-  id: string;
-  title: string;
-  rounds?: number;
-  exercises: Exercise[];
-}
+import type { Category, Training, Exercise, ComplexWithExercises } from '../types';
 
 interface CategoriesSectionProps {
   categories: Category[];
   trainings: Training[];
-  exercises: Complex[];
+  exercises: ComplexWithExercises[];
   selectedCategory: Category | null;
   onSelectCategory: (cat: Category | null) => void;
   selectedCourse: Training | null;
