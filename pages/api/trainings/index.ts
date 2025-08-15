@@ -1,16 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { db, trainings } from '../../../src/db';
+import { handleCors } from '../../../src/utils/cors';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (handleCors(req, res)) return;
 
   switch (req.method) {
-    case 'OPTIONS': {
-      res.status(200).end();
-      break;
-    }
     case 'GET': {
       const all = await db.select().from(trainings);
       res.status(200).json(all);
@@ -31,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
     }
     default:
-      res.setHeader('Allow', ['GET', 'POST', 'OPTIONS']);
+      res.setHeader('Allow', ['GET', 'POST']);
       res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
