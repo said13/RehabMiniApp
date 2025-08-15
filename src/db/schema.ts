@@ -6,6 +6,7 @@ import {
   boolean,
   uuid,
   integer,
+  text,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
@@ -23,36 +24,39 @@ export const users = pgTable("users", {
 export const categories = pgTable("categories", {
   id: uuid("id").defaultRandom().primaryKey(),
   title: varchar("title", { length: 256 }).notNull(),
+  coverUrl: varchar("cover_url", { length: 512 }).notNull(),
 });
 
 export const trainings = pgTable("trainings", {
   id: uuid("id").defaultRandom().primaryKey(),
-  title: varchar("title", { length: 256 }).notNull(),
   categoryId: uuid("category_id")
     .references(() => categories.id, { onDelete: "cascade" })
     .notNull(),
+  title: varchar("title", { length: 256 }).notNull(),
+  description: text("description").notNull(),
+  coverUrl: varchar("cover_url", { length: 512 }).notNull(),
 });
 
 export const complexes = pgTable("complexes", {
   id: uuid("id").defaultRandom().primaryKey(),
-  title: varchar("title", { length: 256 }).notNull(),
   trainingId: uuid("training_id")
     .references(() => trainings.id, { onDelete: "cascade" })
     .notNull(),
-  rounds: integer("rounds"),
-  restBetweenSec: integer("rest_between_sec"),
+  order: integer("order").notNull(),
+  rounds: integer("rounds").notNull(),
 });
 
 export const exercises = pgTable("exercises", {
   id: uuid("id").defaultRandom().primaryKey(),
-  title: varchar("title", { length: 256 }).notNull(),
   complexId: uuid("complex_id")
     .references(() => complexes.id, { onDelete: "cascade" })
     .notNull(),
-  video: varchar("video", { length: 512 }).notNull(),
-  thumbnail: varchar("thumbnail", { length: 512 }),
-  mode: varchar("mode", { length: 10 }).notNull(),
-  durationSec: integer("duration_sec"),
-  reps: integer("reps"),
-  restSec: integer("rest_sec"),
+  title: varchar("title", { length: 256 }).notNull(),
+  videoUrl: varchar("video_url", { length: 512 }),
+  muxId: varchar("mux_id", { length: 256 }),
+  videoDurationSec: integer("video_duration_sec").notNull(),
+  performDurationSec: integer("perform_duration_sec").notNull(),
+  repetitions: integer("repetitions"),
+  restSec: integer("rest_sec").notNull().default(0),
+  notes: text("notes"),
 });
