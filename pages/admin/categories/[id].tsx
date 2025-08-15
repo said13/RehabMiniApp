@@ -4,19 +4,19 @@ import AdminLayout from 'src/components/admin/AdminLayout';
 
 type Training = {
   id: string;
-  name: string;
+  title: string;
   description: string;
   coverUrl: string;
 };
 
 type Category = {
   id: string;
-  name: string;
+  title: string;
   coverUrl: string;
   trainings: Training[];
 };
 
-const emptyTraining = { name: '', description: '', coverUrl: '' };
+const emptyTraining = { title: '', description: '', coverUrl: '' };
 
 export default function CategoryDetail() {
   const router = useRouter();
@@ -25,7 +25,6 @@ export default function CategoryDetail() {
   const [trainings, setTrainings] = useState<Training[]>([]);
   const [form, setForm] = useState(emptyTraining);
   const [editId, setEditId] = useState<string | null>(null);
-  const [editingTraining, setEditingTraining] = useState<Training | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -46,35 +45,33 @@ export default function CategoryDetail() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!category) return;
-    if (editId && editingTraining) {
-      const updated: Training = {
-        ...editingTraining,
-        name: form.name,
-        description: form.description,
-        coverUrl: form.coverUrl,
-      };
+    const payload = {
+      title: form.title,
+      description: form.description,
+      coverUrl: form.coverUrl,
+      categoryId: category.id,
+    };
+    if (editId) {
       await fetch(`/api/trainings/${editId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated),
+        body: JSON.stringify(payload),
       });
     } else {
       await fetch('/api/trainings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ categoryId: category.id, training: form }),
+        body: JSON.stringify(payload),
       });
     }
     setForm(emptyTraining);
     setEditId(null);
-    setEditingTraining(null);
     fetchCategory();
   };
 
   const handleEdit = (training: Training) => {
     setEditId(training.id);
-    setEditingTraining(training);
-    setForm({ name: training.name, description: training.description, coverUrl: training.coverUrl });
+    setForm({ title: training.title, description: training.description, coverUrl: training.coverUrl });
   };
 
   const handleDelete = async (trainingId: string) => {
@@ -86,11 +83,11 @@ export default function CategoryDetail() {
   return (
     <AdminLayout>
       <button onClick={() => router.push('/admin/categories')}>Back</button>
-      <h1>Category: {category?.name}</h1>
+      <h1>Category: {category?.title}</h1>
       <ul>
         {trainings.map((t) => (
           <li key={t.id}>
-            {t.name} ({t.id}){' '}
+            {t.title} ({t.id}){' '}
             <button onClick={() => handleEdit(t)}>Edit</button>
             <button onClick={() => handleDelete(t.id)}>Delete</button>
           </li>
@@ -99,9 +96,9 @@ export default function CategoryDetail() {
       <h2 style={{ marginTop: 30 }}>{editId ? 'Edit' : 'Add'} Training</h2>
       <form onSubmit={handleSubmit}>
         <input
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          placeholder="name"
+          value={form.title}
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
+          placeholder="title"
         />
         <textarea
           value={form.description}
