@@ -38,6 +38,19 @@ export function HomeTab({ viewerCourse, setViewerCourse }: HomeTabProps) {
 
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<Training | null>(null);
+  const [trainings, setTrainings] = useState<Training[]>([]);
+  const [exercises, setExercises] = useState<{ id: string; title: string; rounds?: number; exercises: Exercise[] }[]>([]);
+
+  useEffect(() => {
+    if (selectedCategory) setTrainings(selectedCategory.trainings || []);
+    else setTrainings([]);
+    setSelectedCourse(null);
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    if (selectedCourse) setExercises(selectedCourse.complexes || []);
+    else setExercises([]);
+  }, [selectedCourse]);
 
   const startExercise = (ex: Exercise) => {
     if (!selectedCourse) return;
@@ -56,6 +69,8 @@ export function HomeTab({ viewerCourse, setViewerCourse }: HomeTabProps) {
       )}
       <CategoriesSection
         categories={categories}
+        trainings={trainings}
+        exercises={exercises}
         selectedCategory={selectedCategory}
         onSelectCategory={setSelectedCategory}
         selectedCourse={selectedCourse}
