@@ -2,12 +2,18 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { BannerCarousel } from './BannerCarousel';
 import { CategoriesSection } from './CategoriesSection';
-import type { Category, Training, Exercise, ComplexWithExercises } from '../types';
+import type {
+  Category,
+  Training,
+  Exercise,
+  ComplexWithExercises,
+  TrainingWithComplexes,
+} from '../types';
 import type { Dispatch, SetStateAction } from 'react';
 
 interface HomeTabProps {
-  viewerCourse: Training | null;
-  setViewerCourse: Dispatch<SetStateAction<Training | null>>;
+  viewerCourse: TrainingWithComplexes | null;
+  setViewerCourse: Dispatch<SetStateAction<TrainingWithComplexes | null>>;
 }
 
 export function HomeTab({ viewerCourse, setViewerCourse }: HomeTabProps) {
@@ -42,22 +48,48 @@ export function HomeTab({ viewerCourse, setViewerCourse }: HomeTabProps) {
   const [exercises, setExercises] = useState<ComplexWithExercises[]>([]);
 
   useEffect(() => {
-    if (selectedCategory) setTrainings(selectedCategory.trainings || []);
-    else setTrainings([]);
+    if (selectedCategory) {
+      fetch('/api/trainings')
+        .then((res) => res.json())
+        .then((data: Training[]) =>
+          setTrainings(data.filter((t) => t.categoryId === selectedCategory.id)),
+        )
+        .catch(() => {});
+    } else {
+      setTrainings([]);
+    }
     setSelectedCourse(null);
   }, [selectedCategory]);
 
   useEffect(() => {
-    if (selectedCourse) setExercises(selectedCourse.complexes || []);
-    else setExercises([]);
+    if (selectedCourse) {
+      Promise.all([fetch('/api/complexes'), fetch('/api/exercises')])
+        .then(async ([cRes, eRes]) => {
+          const allComplexes = await cRes.json();
+          const allExercises = await eRes.json();
+          const courseComplexes: ComplexWithExercises[] = allComplexes
+            .filter((c: ComplexWithExercises) => c.trainingId === selectedCourse.id)
+            .map((c: any) => ({
+              ...c,
+              exercises: allExercises.filter((e: Exercise) => e.complexId === c.id),
+            }));
+          setExercises(courseComplexes);
+        })
+        .catch(() => {});
+    } else {
+      setExercises([]);
+    }
   }, [selectedCourse]);
 
   const startExercise = (ex: Exercise) => {
     if (!selectedCourse) return;
-    const single: Training = {
+    const single: TrainingWithComplexes = {
       id: `${selectedCourse.id}-${ex.id}`,
+      categoryId: selectedCourse.categoryId,
       title: ex.title,
-      complexes: [{ id: ex.id, title: ex.title, exercises: [ex] }],
+      description: '',
+      coverUrl: '',
+      complexes: [{ id: ex.id, trainingId: selectedCourse.id, order: 1, rounds: 1, exercises: [ex] }],
     };
     setViewerCourse(single);
   };
@@ -67,17 +99,20 @@ export function HomeTab({ viewerCourse, setViewerCourse }: HomeTabProps) {
       {!selectedCategory && !selectedCourse && (
         <BannerCarousel banners={banners} activeIndex={bannerIdx} onSelect={setBannerIdx} router={router} />
       )}
-      <CategoriesSection
-        categories={categories}
-        trainings={trainings}
-        exercises={exercises}
-        selectedCategory={selectedCategory}
-        onSelectCategory={setSelectedCategory}
-        selectedCourse={selectedCourse}
-        onSelectCourse={setSelectedCourse}
-        onStartCourse={() => selectedCourse && setViewerCourse(selectedCourse)}
-        onStartExercise={startExercise}
-      />
-    </div>
-  );
+        <CategoriesSection
+          categories={categories}
+          trainings={trainings}
+          exercises={exercises}
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+          selectedCourse={selectedCourse}
+          onSelectCourse={setSelectedCourse}
+          onStartCourse={() =>
+            selectedCourse &&
+            setViewerCourse({ ...selectedCourse, complexes: exercises })
+          }
+          onStartExercise={startExercise}
+        />
+      </div>
+    );
 }

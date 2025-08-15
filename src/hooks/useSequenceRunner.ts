@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import type { Training } from '../types';
+import type { TrainingWithComplexes } from '../types';
 
-export function useSequenceRunner(training: Training) {
+export function useSequenceRunner(training: TrainingWithComplexes) {
   const [complexIdx, setComplexIdx] = useState(0);
   const [exIdx, setExIdx] = useState(0);
   const [roundIdx, setRoundIdx] = useState(0);
@@ -13,8 +13,8 @@ export function useSequenceRunner(training: Training) {
   const ex = complex?.exercises[exIdx];
 
   useEffect(() => {
-    if (mode !== 'playing' || !ex || ex.mode !== 'time') return;
-    if (remaining == null) setRemaining(ex.durationSec ?? 0);
+    if (mode !== 'playing' || !ex || !ex.performDurationSec) return;
+    if (remaining == null) setRemaining(ex.performDurationSec ?? 0);
     if (remaining == null) return;
     const t = setInterval(() => setRemaining(v => (v! > 0 ? v! - 1 : 0)), 1000);
     return () => clearInterval(t);
@@ -27,7 +27,7 @@ export function useSequenceRunner(training: Training) {
   }, [mode, remaining]);
 
   useEffect(() => {
-    if (mode === 'playing' && ex?.mode === 'time' && remaining === 0) next();
+    if (mode === 'playing' && ex?.performDurationSec && remaining === 0) next();
     if (mode === 'rest' && remaining === 0) next();
   }, [mode, ex?.id, remaining]);
 
@@ -54,15 +54,15 @@ export function useSequenceRunner(training: Training) {
     if (!curComplex || !curEx) { setMode('complete'); return; }
 
     const nextExIdx = exIdx + 1;
-    if (curEx.restSec) {
-      setMode('rest');
-      setRemaining(curEx.restSec);
-      if (nextExIdx < curComplex.exercises.length) setPending('exercise');
-      else if (roundIdx + 1 < (curComplex.rounds || 1)) setPending('round');
-      else if (complexIdx + 1 < training.complexes.length) setPending('complex');
-      else setPending('complete');
-      return;
-    }
+      if (curEx.restSec) {
+        setMode('rest');
+        setRemaining(curEx.restSec);
+        if (nextExIdx < curComplex.exercises.length) setPending('exercise');
+        else if (roundIdx + 1 < (curComplex.rounds || 1)) setPending('round');
+        else if (complexIdx + 1 < training.complexes.length) setPending('complex');
+        else setPending('complete');
+        return;
+      }
 
     if (nextExIdx < curComplex.exercises.length) {
       setExIdx(nextExIdx);
@@ -70,18 +70,12 @@ export function useSequenceRunner(training: Training) {
       return;
     }
 
-    if (roundIdx + 1 < (curComplex.rounds || 1)) {
-      if (curComplex.restBetweenSec) {
-        setMode('rest');
-        setRemaining(curComplex.restBetweenSec);
-        setPending('round');
-      } else {
+      if (roundIdx + 1 < (curComplex.rounds || 1)) {
         setRoundIdx(r => r + 1);
         setExIdx(0);
         resetTimers();
+        return;
       }
-      return;
-    }
 
     if (complexIdx + 1 < training.complexes.length) {
       setComplexIdx(l => l + 1);

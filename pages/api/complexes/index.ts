@@ -9,15 +9,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
     }
     case 'POST': {
-      const { title, trainingId, rounds, restBetweenSec } = req.body as {
-        title: string;
+      const { trainingId, order, rounds } = req.body as {
         trainingId: string;
-        rounds?: number;
-        restBetweenSec?: number;
+        order: number;
+        rounds: number;
       };
       const inserted = await db
         .insert(complexes)
-        .values({ title, trainingId, rounds, restBetweenSec })
+        .values({ trainingId, order, rounds })
         .returning();
       res.status(201).json(inserted[0]);
       break;

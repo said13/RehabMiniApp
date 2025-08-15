@@ -17,10 +17,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
     }
     case 'POST': {
-      const { title, categoryId } = req.body as { title: string; categoryId: string };
+      const { title, categoryId, description, coverUrl } = req.body as {
+        title: string;
+        categoryId: string;
+        description: string;
+        coverUrl: string;
+      };
       const inserted = await db
         .insert(trainings)
-        .values({ title, categoryId })
+        .values({ title, categoryId, description, coverUrl })
         .returning();
       res.status(201).json(inserted[0]);
       break;

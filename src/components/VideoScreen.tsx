@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSequenceRunner } from '../hooks/useSequenceRunner';
-import type { Training } from '../types';
+import type { TrainingWithComplexes } from '../types';
 import { PlaylistPlayer, type PlaylistItem } from './PlaylistPlayer';
 
-export function VideoScreen({ training, onClose, title }: { training: Training; onClose: () => void; title?: string }) {
+export function VideoScreen({ training, onClose, title }: { training: TrainingWithComplexes; onClose: () => void; title?: string }) {
   const s = useSequenceRunner(training);
 
   const [muted, setMuted] = useState(true);
@@ -13,18 +13,19 @@ export function VideoScreen({ training, onClose, title }: { training: Training; 
   }, []);
 
   // Flat list of all exercises for playlist support
-  const playlist: PlaylistItem[] = useMemo(() => {
-    return training.complexes.flatMap(c =>
-      c.exercises.map(ex => {
-        // Support full .m3u8 URL or Mux playback ID
-        if (/\.m3u8($|\?)/.test(ex.video)) {
-          return { url: ex.video, title: ex.title };
-        }
-        const m = ex.video.match(/(?:player|stream)\.mux\.com\/([^\.?]+)/);
-        return { id: m ? m[1] : ex.video, title: ex.title };
-      })
-    );
-  }, [training]);
+    const playlist: PlaylistItem[] = useMemo(() => {
+      return training.complexes.flatMap((c) =>
+        c.exercises.map((ex) => {
+          const src = ex.videoUrl ?? '';
+          if (/\.m3u8($|\?)/.test(src)) {
+            return { url: src, title: ex.title };
+          }
+          const m = src.match(/(?:player|stream)\.mux\.com\/([^\.?]+)/);
+          const id = ex.muxId || (m ? m[1] : src);
+          return { id, title: ex.title };
+        }),
+      );
+    }, [training]);
 
   const totalExercises = training.complexes.reduce((sum, l) => sum + l.exercises.length, 0);
   const beforeCurrent = training.complexes.slice(0, s.complexIdx).reduce((sum, l) => sum + l.exercises.length, 0);

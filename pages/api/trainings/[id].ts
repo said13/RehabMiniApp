@@ -24,10 +24,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
     }
     case 'PUT': {
-      const { title, categoryId } = req.body as { title: string; categoryId: string };
+      const { title, categoryId, description, coverUrl } = req.body as {
+        title: string;
+        categoryId: string;
+        description: string;
+        coverUrl: string;
+      };
       const updated = await db
         .update(trainings)
-        .set({ title, categoryId })
+        .set({ title, categoryId, description, coverUrl })
         .where(eq(trainings.id, id))
         .returning();
       if (!updated.length) {

@@ -19,7 +19,6 @@ export type Complex = {
 };
 
 export type ComplexWithExercises = Complex & {
-  title: string;
   exercises: Exercise[];
 };
 
@@ -29,6 +28,10 @@ export type Training = {
   title: string;
   description: string;
   coverUrl: string;
+};
+
+export type TrainingWithComplexes = Training & {
+  complexes: ComplexWithExercises[];
 };
 
 export type Category = {

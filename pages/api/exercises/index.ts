@@ -9,10 +9,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
     }
     case 'POST': {
-      const { title, complexId, video, thumbnail, mode, durationSec, reps, restSec } = req.body as any;
+      const {
+        title,
+        complexId,
+        videoUrl,
+        muxId,
+        videoDurationSec,
+        performDurationSec,
+        repetitions,
+        restSec,
+        notes,
+      } = req.body as any;
       const inserted = await db
         .insert(exercises)
-        .values({ title, complexId, video, thumbnail, mode, durationSec, reps, restSec })
+        .values({
+          title,
+          complexId,
+          videoUrl,
+          muxId,
+          videoDurationSec,
+          performDurationSec,
+          repetitions,
+          restSec,
+          notes,
+        })
         .returning();
       res.status(201).json(inserted[0]);
       break;

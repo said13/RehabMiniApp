@@ -11,7 +11,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { HomeTab } from './components/HomeTab';
 import { useErrorLogger } from './hooks/useErrorLogger';
-import type { Training } from './types';
+import type { TrainingWithComplexes } from './types';
 import { useRouter } from 'next/router';
 
 export default function RehabMiniApp() {
@@ -20,7 +20,7 @@ export default function RehabMiniApp() {
   const router = useRouter();
 
   const [tab, setTab] = useState<'home' | 'profile' | 'debug' | 'admin'>('home');
-  const [viewerCourse, setViewerCourse] = useState<Training | null>(null);
+  const [viewerCourse, setViewerCourse] = useState<TrainingWithComplexes | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const [subActive, setSubActive] = useState<boolean>(false);

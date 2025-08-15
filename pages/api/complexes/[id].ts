@@ -16,15 +16,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
     }
     case 'PUT': {
-      const { title, trainingId, rounds, restBetweenSec } = req.body as {
-        title: string;
+      const { trainingId, order, rounds } = req.body as {
         trainingId: string;
-        rounds?: number;
-        restBetweenSec?: number;
+        order: number;
+        rounds: number;
       };
       const updated = await db
         .update(complexes)
-        .set({ title, trainingId, rounds, restBetweenSec })
+        .set({ trainingId, order, rounds })
         .where(eq(complexes.id, id))
         .returning();
       if (!updated.length) {
