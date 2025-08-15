@@ -1,35 +1,44 @@
-export type Cue = { atSec: number; text: string; tts?: boolean };
-
-export type Video = {
-  id: string;
-  title: string;
-  url: string;
-  thumbnail?: string;
-};
-
 export type Exercise = {
   id: string;
+  complexId: string;
   title: string;
-  video: string;
-  thumbnail?: string;
-  mode: 'time' | 'reps' | 'demo';
-  durationSec?: number;
-  reps?: number;
+  videoUrl?: string;
+  muxId?: string;
+  videoDurationSec: number;
+  performDurationSec: number;
+  repetitions?: number;
   restSec?: number;
-  cues?: Cue[];
+  notes?: string;
 };
 
 export type Complex = {
   id: string;
-  title: string;
-  exercises: Exercise[];
-  rounds?: number;
-  restBetweenSec?: number;
+  trainingId: string;
+  order: number;
+  rounds: number;
 };
 
-export type Training = { id: string; title: string; complexes: Complex[] };
+export type ComplexWithExercises = Complex & {
+  exercises: Exercise[];
+};
 
-export type Category = { id: string; title: string; trainings: Training[] };
+export type Training = {
+  id: string;
+  categoryId: string;
+  title: string;
+  description: string;
+  coverUrl: string;
+};
+
+export type TrainingWithComplexes = Training & {
+  complexes: ComplexWithExercises[];
+};
+
+export type Category = {
+  id: string;
+  title: string;
+  coverUrl: string;
+};
 
 export type User = {
   id: number;

@@ -3,6 +3,15 @@ import { eq } from 'drizzle-orm';
 import { db, exercises } from '../../../src/db';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   const { id } = req.query as { id: string };
 
   switch (req.method) {
@@ -16,10 +25,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
     }
     case 'PUT': {
-      const { title, complexId, video, thumbnail, mode, durationSec, reps, restSec, cues } = req.body as any;
+      const {
+        title,
+        complexId,
+        videoUrl,
+        muxId,
+        videoDurationSec,
+        performDurationSec,
+        repetitions,
+        restSec,
+        notes,
+      } = req.body as any;
       const updated = await db
         .update(exercises)
-        .set({ title, complexId, video, thumbnail, mode, durationSec, reps, restSec, cues })
+        .set({
+          title,
+          complexId,
+          videoUrl,
+          muxId,
+          videoDurationSec,
+          performDurationSec,
+          repetitions,
+          restSec,
+          notes,
+        })
         .where(eq(exercises.id, id))
         .returning();
       if (!updated.length) {

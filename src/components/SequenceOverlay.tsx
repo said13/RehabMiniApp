@@ -1,41 +1,23 @@
-import { useEffect, useState } from 'react';
 import { useSequenceRunner } from '../hooks/useSequenceRunner';
-import type { Training } from '../types';
+import type { TrainingWithComplexes } from '../types';
 import { EmbedPlayer } from './EmbedPlayer';
 
-export function SequenceOverlay({ training, envReady }: { training: Training; envReady: boolean }) {
+export function SequenceOverlay({ training }: { training: TrainingWithComplexes }) {
   const s = useSequenceRunner(training);
   const idxLabel = s.complex ? `${s.exIdx + 1}/${s.complex.exercises.length}` : '';
-  const [ttsEnabled, setTtsEnabled] = useState(false);
 
-  useEffect(() => {
-    if (!envReady || !ttsEnabled || !s.ex) return;
-    const cues = s.ex.cues?.filter(c => c.tts) || [];
-    if (cues.length === 0) return;
-    const timers = cues.map(c => setTimeout(() => {
-      try {
-        if ('speechSynthesis' in window) {
-          const u = new SpeechSynthesisUtterance(c.text);
-          window.speechSynthesis.speak(u);
-        }
-      } catch {}
-    }, (c.atSec || 0) * 1000));
-    return () => timers.forEach(clearTimeout);
-  }, [envReady, ttsEnabled, s.ex?.id]);
-
-  const [playTick, setPlayTick] = useState(0);
-  const onPlayPress = () => { setTtsEnabled(true); setPlayTick(t => t + 1); s.play(); };
+  const onPlayPress = () => { s.play(); };
 
   return (
-    <div className="p-2 -mx-2">
-      <div className="flex items-center justify-between text-xs text-gray-400 px-2">
-        <div>{s.complex?.title}</div>
-        <div>{idxLabel}</div>
-      </div>
+      <div className="p-2 -mx-2">
+        <div className="flex items-center justify-between text-xs text-gray-400 px-2">
+          <div>{s.complex ? `Complex ${s.complexIdx + 1}` : ''}</div>
+          <div>{idxLabel}</div>
+        </div>
 
-      <div className="relative rounded-xl overflow-hidden my-3 bg-black aspect-video">
-        <EmbedPlayer src={s.ex?.video || ''} placeholderTitle={s.ex?.title || 'Ready'} />
-      </div>
+        <div className="relative rounded-xl overflow-hidden my-3 bg-black aspect-video">
+          <EmbedPlayer src={s.ex?.videoUrl || ''} placeholderTitle={s.ex?.title || 'Ready'} />
+        </div>
 
       {s.mode === 'rest' ? (
         <div className="flex items-center justify-between rounded-xl bg-white/5 p-3">
@@ -47,10 +29,10 @@ export function SequenceOverlay({ training, envReady }: { training: Training; en
             <button className="px-3 py-2 bg-blue-600 rounded-lg" onClick={s.skipRest}>Skip</button>
           </div>
         </div>
-      ) : s.ex?.mode === 'time' ? (
+        ) : s.ex?.performDurationSec ? (
         <div className="flex items-center justify-between rounded-xl bg-white/5 p-3">
-          <div className="text-sm">{s.ex.title}</div>
-          <div className="text-2xl tabular-nums">{s.remaining ?? s.ex.durationSec}s</div>
+            <div className="text-sm">{s.ex.title}</div>
+            <div className="text-2xl tabular-nums">{s.remaining ?? s.ex.performDurationSec}s</div>
           <button className="px-3 py-2 bg-white/10 rounded-lg flex items-center gap-2" onClick={s.next}>
             <span>Next</span>
             <i className="fa-solid fa-chevron-right"></i>
@@ -59,7 +41,7 @@ export function SequenceOverlay({ training, envReady }: { training: Training; en
       ) : s.ex ? (
         <div className="flex items-center justify-between rounded-xl bg-white/5 p-3">
           <div className="text-sm">{s.ex.title}</div>
-          <div className="text-xs text-gray-400">{s.ex.reps} reps</div>
+            <div className="text-xs text-gray-400">{s.ex.repetitions} reps</div>
           <button className="px-3 py-2 bg-blue-600 rounded-lg flex items-center gap-2" onClick={s.next}>
             <span>Mark done</span>
             <i className="fa-solid fa-arrow-right"></i>

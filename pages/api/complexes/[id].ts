@@ -1,8 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { eq } from 'drizzle-orm';
 import { db, complexes } from '../../../src/db';
+import { handleCors } from '../../../src/utils/cors';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (handleCors(req, res)) return;
+
   const { id } = req.query as { id: string };
 
   switch (req.method) {
@@ -16,15 +19,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
     }
     case 'PUT': {
-      const { title, trainingId, rounds, restBetweenSec } = req.body as {
-        title: string;
+      const { trainingId, order, rounds } = req.body as {
         trainingId: string;
-        rounds?: number;
-        restBetweenSec?: number;
+        order: number;
+        rounds: number;
       };
       const updated = await db
         .update(complexes)
-        .set({ title, trainingId, rounds, restBetweenSec })
+        .set({ trainingId, order, rounds })
         .where(eq(complexes.id, id))
         .returning();
       if (!updated.length) {

@@ -1,11 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { db, users } from '../../../src/db';
 import { eq } from 'drizzle-orm';
+import { handleCors } from '../../../src/utils/cors';
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
+  if (handleCors(req, res)) return;
+
   const { id } = req.query;
   if (typeof id !== 'string') {
     res.status(400).json({ error: 'Invalid id' });

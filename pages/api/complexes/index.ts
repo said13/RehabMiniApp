@@ -1,7 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { db, complexes } from '../../../src/db';
+import { handleCors } from '../../../src/utils/cors';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (handleCors(req, res)) return;
+
   switch (req.method) {
     case 'GET': {
       const all = await db.select().from(complexes);
@@ -9,15 +12,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
     }
     case 'POST': {
-      const { title, trainingId, rounds, restBetweenSec } = req.body as {
-        title: string;
+      const { trainingId, order, rounds } = req.body as {
         trainingId: string;
-        rounds?: number;
-        restBetweenSec?: number;
+        order: number;
+        rounds: number;
       };
       const inserted = await db
         .insert(complexes)
-        .values({ title, trainingId, rounds, restBetweenSec })
+        .values({ trainingId, order, rounds })
         .returning();
       res.status(201).json(inserted[0]);
       break;

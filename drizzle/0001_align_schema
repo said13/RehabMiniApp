@@ -1,0 +1,43 @@
+-- 1) exercises.video -> exercises.video_url (сохранит данные)
+ALTER TABLE exercises RENAME COLUMN video TO video_url;
+
+-- 2) categories: cover_url (пока допускаем NULL, потом решим про NOT NULL)
+ALTER TABLE categories ADD COLUMN IF NOT EXISTS cover_url varchar(512);
+
+-- 3) trainings: description, cover_url (пока допускаем NULL)
+ALTER TABLE trainings ADD COLUMN IF NOT EXISTS description text;
+ALTER TABLE trainings ADD COLUMN IF NOT EXISTS cover_url varchar(512);
+
+-- 4) complexes: order, rounds (пока допускаем NULL, заполним)
+ALTER TABLE complexes ADD COLUMN IF NOT EXISTS "order" integer;
+UPDATE complexes c
+SET "order" = sub.rn
+FROM (
+  SELECT id, ROW_NUMBER() OVER (PARTITION BY training_id ORDER BY id) AS rn
+  FROM complexes
+) AS sub
+WHERE sub.id = c.id AND c."order" IS NULL;
+
+UPDATE complexes SET rounds = COALESCE(rounds, 1);
+
+-- 5) exercises: новые поля из schema.ts
+ALTER TABLE exercises ADD COLUMN IF NOT EXISTS mux_id varchar(256);
+ALTER TABLE exercises ADD COLUMN IF NOT EXISTS video_duration_sec integer;
+ALTER TABLE exercises ADD COLUMN IF NOT EXISTS perform_duration_sec integer;
+ALTER TABLE exercises ADD COLUMN IF NOT EXISTS repetitions integer;
+ALTER TABLE exercises ADD COLUMN IF NOT EXISTS notes text;
+
+-- переносим старые значения в новые столбцы там, где это уместно
+-- если раньше mode='time' -> duration_sec это perform_duration_sec
+-- если mode='reps' -> reps это repetitions
+-- ПРИМЕЧАНИЕ: в текущей БД есть колонка mode; в schema.ts её уже нет
+UPDATE exercises
+SET perform_duration_sec = COALESCE(perform_duration_sec, duration_sec)
+WHERE mode = 'time' AND duration_sec IS NOT NULL;
+
+UPDATE exercises
+SET repetitions = COALESCE(repetitions, reps)
+WHERE mode = 'reps' AND reps IS NOT NULL;
+
+-- rest_sec NULL -> 0
+UPDATE exercises SET rest_sec = 0 WHERE rest_sec IS NULL;

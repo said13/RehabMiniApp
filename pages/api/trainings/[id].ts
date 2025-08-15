@@ -3,17 +3,18 @@ import { eq } from 'drizzle-orm';
 import { db, trainings } from '../../../src/db';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   const { id } = req.query as { id: string };
 
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
   switch (req.method) {
-    case 'OPTIONS': {
-      res.status(200).end();
-      break;
-    }
     case 'GET': {
       const result = await db.select().from(trainings).where(eq(trainings.id, id)).limit(1);
       if (!result.length) {
@@ -24,10 +25,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
     }
     case 'PUT': {
-      const { title, categoryId } = req.body as { title: string; categoryId: string };
+      const { title, categoryId, description, coverUrl } = req.body as {
+        title: string;
+        categoryId: string;
+        description: string;
+        coverUrl: string;
+      };
       const updated = await db
         .update(trainings)
-        .set({ title, categoryId })
+        .set({ title, categoryId, description, coverUrl })
         .where(eq(trainings.id, id))
         .returning();
       if (!updated.length) {
@@ -47,7 +53,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
     }
     default:
-      res.setHeader('Allow', ['GET', 'PUT', 'DELETE', 'OPTIONS']);
+      res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
       res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }

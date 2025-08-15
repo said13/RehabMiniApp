@@ -3,6 +3,15 @@ import { eq } from 'drizzle-orm';
 import { db, categories } from '../../../src/db';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   const { id } = req.query as { id: string };
 
   switch (req.method) {
@@ -16,10 +25,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
     }
     case 'PUT': {
-      const { title } = req.body as { title: string };
+      const { title, coverUrl } = req.body as { title: string; coverUrl: string };
       const updated = await db
         .update(categories)
-        .set({ title })
+        .set({ title, coverUrl })
         .where(eq(categories.id, id))
         .returning();
       if (!updated.length) {
