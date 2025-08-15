@@ -1,21 +1,29 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import type { Category } from '../../types';
+import type { Category, Training } from '../../types';
 
 export function CategoriesSection() {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [trainings, setTrainings] = useState<Training[]>([]);
   const [form, setForm] = useState({ title: '', coverUrl: '' });
   const [editId, setEditId] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     fetchCategories();
+    fetchTrainings();
   }, []);
 
   const fetchCategories = async () => {
     const res = await fetch('/api/categories');
     const data = await res.json();
     setCategories(data);
+  };
+
+  const fetchTrainings = async () => {
+    const res = await fetch('/api/trainings');
+    const data = await res.json();
+    setTrainings(data);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,30 +65,48 @@ export function CategoriesSection() {
         {categories.map((cat) => (
           <li
             key={cat.id}
-            className="flex items-center justify-between bg-neutral-900 px-4 py-2 rounded-lg cursor-pointer"
-            onClick={() => router.push(`/admin/categories/${cat.id}`)}
+            className="bg-neutral-900 px-4 py-2 rounded-lg"
           >
-            <span className="font-medium">{cat.title}</span>
-            <div className="flex items-center gap-3 text-sm">
-              <button
-                className="text-blue-400 hover:underline"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEdit(cat);
-                }}
-              >
-                Edit
-              </button>
-              <button
-                className="text-red-400 hover:underline"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete(cat.id);
-                }}
-              >
-                Delete
-              </button>
+            <div
+              className="flex items-center justify-between cursor-pointer"
+              onClick={() => router.push(`/admin/categories/${cat.id}`)}
+            >
+              <span className="font-medium">{cat.title}</span>
+              <div className="flex items-center gap-3 text-sm">
+                <button
+                  className="text-blue-400 hover:underline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEdit(cat);
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  className="text-red-400 hover:underline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(cat.id);
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
+            <ul className="mt-2 ml-4 space-y-1">
+              {trainings
+                .filter((t) => t.categoryId === cat.id)
+                .map((t) => (
+                  <li key={t.id}>
+                    <button
+                      className="text-sm text-blue-400 hover:underline"
+                      onClick={() => router.push(`/admin/categories/${cat.id}/${t.id}`)}
+                    >
+                      {t.title}
+                    </button>
+                  </li>
+                ))}
+            </ul>
           </li>
         ))}
       </ul>
