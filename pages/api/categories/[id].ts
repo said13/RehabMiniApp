@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { eq } from 'drizzle-orm';
-import { db, categories } from '../../../src/db';
+import { db, categories, trainings } from '../../../src/db';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -21,7 +21,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         res.status(404).json({ message: 'Not found' });
         break;
       }
-      res.status(200).json(result[0]);
+      const ts = await db.select().from(trainings).where(eq(trainings.categoryId, id));
+      res.status(200).json({ ...result[0], trainings: ts });
       break;
     }
     case 'PUT': {
