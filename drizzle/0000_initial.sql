@@ -28,5 +28,13 @@ CREATE TABLE IF NOT EXISTS exercises (
   mode varchar(10) NOT NULL,
   duration_sec integer,
   reps integer,
-  rest_sec integer
+  rest_sec integer,
+  cues jsonb
+);
+
+CREATE TABLE IF NOT EXISTS videos (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  title varchar(256) NOT NULL,
+  url varchar(512) NOT NULL,
+  thumbnail varchar(512)
 );
