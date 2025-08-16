@@ -17,18 +17,35 @@ export function ImageUploader({ value, onChange }: Props) {
   const upload = async (file: File) => {
     setUploading(true);
     try {
-      const preset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
       const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-      if (!preset || !cloudName) {
+      const apiKey = process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY;
+      if (!cloudName || !apiKey) {
         throw new Error('Missing Cloudinary configuration');
       }
+      const sigRes = await fetch('/api/cloudinary-sign');
+      const sigData = await sigRes.json();
+      if (!sigRes.ok) {
+        throw new Error(sigData?.message || 'Failed to sign upload');
+      }
+      const { timestamp, signature } = sigData as {
+        timestamp: number;
+        signature: string;
+      };
+
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', preset);
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
-        method: 'POST',
-        body: formData,
-      });
+      formData.append('api_key', apiKey);
+      formData.append('timestamp', String(timestamp));
+      formData.append('signature', signature);
+      formData.append('use_filename', 'true');
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
       const data = await res.json();
       if (data.secure_url) {
         onChange(data.secure_url);
