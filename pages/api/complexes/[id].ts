@@ -42,20 +42,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .select()
         .from(exercises)
         .where(eq(exercises.complexId, id));
-      for (const ex of related) {
-        if (ex.muxId) {
-          await deleteMuxAsset(ex.muxId);
+
+      try {
+        const muxPromises = related
+          .filter((ex) => ex.muxId)
+          .map((ex) => deleteMuxAsset(ex.muxId!));
+        const deleteComplex = db
+          .delete(complexes)
+          .where(eq(complexes.id, id))
+          .returning();
+        const results = await Promise.all([...muxPromises, deleteComplex]);
+        const deleted = results[results.length - 1] as Awaited<typeof deleteComplex>;
+        if (!deleted.length) {
+          res.status(404).json({ message: 'Not found' });
+          break;
         }
+        res.status(200).json(deleted[0]);
+      } catch (e) {
+        res.status(500).json({ message: 'Failed to delete complex' });
       }
-      const deleted = await db
-        .delete(complexes)
-        .where(eq(complexes.id, id))
-        .returning();
-      if (!deleted.length) {
-        res.status(404).json({ message: 'Not found' });
-        break;
-      }
-      res.status(200).json(deleted[0]);
       break;
     }
     default:

@@ -70,14 +70,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         break;
       }
       const ex = existing[0];
-      if (ex.muxId) {
-        await deleteMuxAsset(ex.muxId);
+      try {
+        const muxPromise = ex.muxId ? deleteMuxAsset(ex.muxId) : Promise.resolve();
+        const dbPromise = db
+          .delete(exercises)
+          .where(eq(exercises.id, id))
+          .returning();
+        const [, deleted] = await Promise.all([muxPromise, dbPromise]);
+        res.status(200).json(deleted[0]);
+      } catch (e) {
+        res.status(500).json({ message: 'Failed to delete exercise' });
       }
-      const deleted = await db
-        .delete(exercises)
-        .where(eq(exercises.id, id))
-        .returning();
-      res.status(200).json(deleted[0]);
       break;
     }
     default:
