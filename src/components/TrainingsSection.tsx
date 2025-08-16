@@ -1,4 +1,5 @@
 import type { Category, Training } from '../types';
+import { CoverCard } from './CoverCard';
 
 interface TrainingsSectionProps {
   category: Category;
@@ -18,20 +19,14 @@ export function TrainingsSection({ category, trainings, onSelectCourse, onBack }
         <span>Back</span>
       </button>
       <h4 className="text-lg font-bold mb-3">{category.title}</h4>
-      <div className="grid gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {trainings.map((t) => (
-          <button
+          <CoverCard
             key={t.id}
-            className="relative text-left group active:scale-[.99] transition flex items-center gap-3 p-4 rounded-2xl bg-neutral-900 border border-neutral-800"
+            title={t.title}
+            imageUrl={t.coverUrl}
             onClick={() => onSelectCourse(t)}
-          >
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium leading-snug line-clamp-2">{t.title}</div>
-            </div>
-            <span className="text-gray-500">
-              <i className="fa-solid fa-chevron-right"></i>
-            </span>
-          </button>
+          />
         ))}
       </div>
     </div>
