@@ -7,6 +7,7 @@ export function VideoScreen({ training, onClose, title }: { training: TrainingWi
   const s = useSequenceRunner(training);
 
   const [muted, setMuted] = useState(true);
+  const [speed, setSpeed] = useState(1);
 
   useEffect(() => {
     s.play();
@@ -38,6 +39,14 @@ export function VideoScreen({ training, onClose, title }: { training: TrainingWi
   const handlePrev = () => { s.prev(); };
   const handleNext = () => { s.next(); };
   const handleMute = () => { setMuted(m => !m); };
+  const handleSpeed = () => {
+    setSpeed((s) => (s === 1 ? 1.5 : s === 1.5 ? 2 : 1));
+  };
+
+  useEffect(() => {
+    const video = document.querySelector('video');
+    if (video) video.playbackRate = speed;
+  }, [speed, currentIndex]);
 
   const topSafe = 'calc(env(safe-area-inset-top) + 1rem)';
 
@@ -57,7 +66,7 @@ export function VideoScreen({ training, onClose, title }: { training: TrainingWi
             <div className="text-xl tabular-nums">{s.remaining ?? 0}s</div>
             <button
               aria-label="Skip rest"
-              className="mt-2 p-2 bg-white/20 rounded-full text-xl"
+              className="mt-2 w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-xl"
               onClick={s.skipRest}
             >
               <i className="fa-solid fa-forward"></i>
@@ -65,48 +74,55 @@ export function VideoScreen({ training, onClose, title }: { training: TrainingWi
           </div>
         </div>
       )}
-      <div className="absolute left-4" style={{ top: topSafe }}>
-        <button
-          aria-label="Exit"
-          className="p-2 bg-black/60 text-white rounded-full text-xl"
-          onClick={onClose}
-        >
-          <i className="fa-solid fa-xmark"></i>
-        </button>
-      </div>
       <div
-        className="absolute right-4 text-right text-white bg-black/60 px-3 py-2 rounded-lg"
+        className="absolute left-4 text-left text-white bg-black/60 px-3 py-2 rounded-lg"
         style={{ top: topSafe }}
       >
         {title && <div className="text-sm mb-1">{title}</div>}
         <div className="text-sm">{s.ex?.title}</div>
         <div className="text-xs opacity-70">{idxLabel}</div>
       </div>
-      <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4 text-white">
+      <div className="absolute right-4" style={{ top: topSafe }}>
+        <button
+          aria-label="Exit"
+          className="w-12 h-12 bg-black/60 text-white rounded-full flex items-center justify-center text-xl"
+          onClick={onClose}
+        >
+          <i className="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div className="absolute bottom-4 left-0 right-0 flex justify-center items-center gap-4 text-white">
+        <button
+          aria-label="Speed"
+          className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-sm font-semibold"
+          onClick={handleSpeed}
+        >
+          {speed}x
+        </button>
         <button
           aria-label="Previous"
-          className="p-3 bg-white/10 rounded-full text-xl"
+          className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-xl"
           onClick={handlePrev}
         >
           <i className="fa-solid fa-backward-step"></i>
         </button>
         <button
           aria-label={s.mode === 'playing' ? 'Pause' : 'Play'}
-          className="p-3 bg-blue-600 rounded-full text-xl"
+          className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-2xl"
           onClick={handlePlayPause}
         >
           <i className={`fa-solid ${s.mode === 'playing' ? 'fa-pause' : 'fa-play'}`}></i>
         </button>
         <button
           aria-label="Next"
-          className="p-3 bg-white/10 rounded-full text-xl"
+          className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-xl"
           onClick={handleNext}
         >
           <i className="fa-solid fa-forward-step"></i>
         </button>
         <button
           aria-label={muted ? 'Unmute' : 'Mute'}
-          className="p-3 bg-white/10 rounded-full text-xl"
+          className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-xl"
           onClick={handleMute}
         >
           <i className={`fa-solid ${muted ? 'fa-volume-xmark' : 'fa-volume-high'}`}></i>
