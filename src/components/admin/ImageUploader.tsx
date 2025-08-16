@@ -18,25 +18,14 @@ export function ImageUploader({ value, onChange }: Props) {
     setUploading(true);
     try {
       const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-      const apiKey = process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY;
-      if (!cloudName || !apiKey) {
+      const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+      if (!cloudName || !uploadPreset) {
         throw new Error('Missing Cloudinary configuration');
       }
-      const sigRes = await fetch('/api/cloudinary-sign');
-      const sigData = await sigRes.json();
-      if (!sigRes.ok) {
-        throw new Error(sigData?.message || 'Failed to sign upload');
-      }
-      const { timestamp, signature } = sigData as {
-        timestamp: number;
-        signature: string;
-      };
 
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('api_key', apiKey);
-      formData.append('timestamp', String(timestamp));
-      formData.append('signature', signature);
+      formData.append('upload_preset', uploadPreset);
       formData.append('use_filename', 'true');
 
       const res = await fetch(
