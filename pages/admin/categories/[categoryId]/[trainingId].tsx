@@ -214,7 +214,7 @@ export default function TrainingExercisesPage() {
   };
 
   const deleteExercise = async (ex: ExerciseForm, index: number) => {
-    if (ex.id) {
+    if (!ex.isNew && ex.id) {
       await fetch(`/api/exercises/${ex.id}`, { method: 'DELETE' });
     } else if (ex.muxId) {
       await fetch(`/api/upload?assetId=${ex.muxId}`, { method: 'DELETE' });
@@ -226,13 +226,19 @@ export default function TrainingExercisesPage() {
     if (complex.isNew) {
       const related = exercises.filter((ex) => ex.complexId === complex.id);
       for (const ex of related) {
-        if (ex.id) {
+        if (!ex.isNew && ex.id) {
           await fetch(`/api/exercises/${ex.id}`, { method: 'DELETE' });
         } else if (ex.muxId) {
           await fetch(`/api/upload?assetId=${ex.muxId}`, { method: 'DELETE' });
         }
       }
     } else {
+      const unsaved = exercises.filter(
+        (ex) => ex.complexId === complex.id && ex.isNew && ex.muxId
+      );
+      for (const ex of unsaved) {
+        await fetch(`/api/upload?assetId=${ex.muxId}`, { method: 'DELETE' });
+      }
       await fetch(`/api/complexes/${complex.id}`, { method: 'DELETE' });
     }
     setExercises((prev) => prev.filter((ex) => ex.complexId !== complex.id));
