@@ -8,9 +8,8 @@ export default function TrainingExercisesPage() {
   const { categoryId, trainingId } = router.query as { categoryId?: string; trainingId?: string };
   const [training, setTraining] = useState<Training | null>(null);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number[]>>({});
-  type ExerciseForm = Omit<Exercise, 'id'> & { id?: string; isNew?: boolean };
-  type ComplexInfo = Omit<Complex, 'trainingId'> & { id: string; isNew?: boolean };
-  const createId = () => Math.random().toString(36).substring(2, 9);
+  type ExerciseForm = Omit<Exercise, 'id'> & { id?: string; useDuration: boolean };
+  type ComplexInfo = Omit<Complex, 'trainingId'> & { id: string };
   const [complexesInfo, setComplexesInfo] = useState<ComplexInfo[]>([]);
   const [exercises, setExercises] = useState<ExerciseForm[]>([]);
 
@@ -37,13 +36,15 @@ export default function TrainingExercisesPage() {
     const cRes = await fetch('/api/complexes');
     const allComplexes: Complex[] = await cRes.json();
     const related = allComplexes.filter((c) => c.trainingId === trainingId);
-    setComplexesInfo(related.map((c) => ({ ...c, isNew: false })));
+    setComplexesInfo(related);
     const eRes = await fetch('/api/exercises');
     const allExercises: Exercise[] = await eRes.json();
     const exRelated = allExercises.filter((ex) =>
       related.some((c) => c.id === ex.complexId)
     );
-    setExercises(exRelated.map((ex) => ({ ...ex, isNew: false })));
+    setExercises(
+      exRelated.map((ex) => ({ ...ex, useDuration: ex.performDurationSec > 0 }))
+    );
   };
 
   const handleFiles = async (files: FileList | null, complexId: string) => {
@@ -94,19 +95,29 @@ export default function TrainingExercisesPage() {
             await new Promise((r) => setTimeout(r, 1000));
           }
           if (info && info.assetId && info.playbackId) {
-            setExercises((prev) => [
-              ...prev,
-              {
-                id: createId(),
-                isNew: true,
-                title: '',
+            try {
+              const payload = {
+                title: `Тренировка ${exercises.length + idx + 1}`,
                 complexId,
                 muxId: info.assetId,
                 videoUrl: `https://stream.mux.com/${info.playbackId}.m3u8`,
-                videoDurationSec: 0,
-                performDurationSec: 0,
-              },
-            ]);
+                videoDurationSec: 10,
+                performDurationSec: 10,
+                repetitions: 1,
+              };
+              const exRes = await fetch('/api/exercises', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+              });
+              const saved = await exRes.json();
+              setExercises((prev) => [
+                ...prev,
+                { ...saved, useDuration: true },
+              ]);
+            } catch (e) {
+              console.error('Failed to save exercise', e);
+            }
           }
         } catch (err) {
           console.error('Failed to retrieve Mux playback ID', err);
@@ -126,75 +137,62 @@ export default function TrainingExercisesPage() {
     });
   };
 
+  const saveExercise = async (ex: ExerciseForm, index: number) => {
+    const payload = {
+      title: ex.title,
+      complexId: ex.complexId,
+      muxId: ex.muxId,
+      videoUrl: ex.videoUrl,
+      videoDurationSec: ex.videoDurationSec,
+      performDurationSec: ex.useDuration ? ex.performDurationSec : 0,
+      repetitions: ex.useDuration ? 0 : ex.repetitions ?? 1,
+      restSec: ex.restSec,
+      notes: ex.notes,
+    };
+    if (ex.id) {
+      await fetch(`/api/exercises/${ex.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } else {
+      const res = await fetch('/api/exercises', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      setExercises((prev) => {
+        const next = [...prev];
+        next[index] = { ...next[index], id: data.id };
+        return next;
+      });
+    }
+  };
+
   const updateExercise = (index: number, field: keyof ExerciseForm, value: any) => {
     setExercises((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], [field]: value };
+      saveExercise(next[index], index);
       return next;
     });
   };
 
-  const startNewComplex = () => {
-    const newId = createId();
-    setComplexesInfo((prev) => [
-      ...prev,
-      { id: newId, order: prev.length + 1, rounds: 1, isNew: true },
-    ]);
+  const startNewComplex = async () => {
+    const res = await fetch('/api/complexes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        trainingId,
+        order: complexesInfo.length + 1,
+        rounds: 1,
+      }),
+    });
+    const data = await res.json();
+    setComplexesInfo((prev) => [...prev, { id: data.id, order: data.order, rounds: data.rounds }]);
   };
 
-  const handleSave = async () => {
-    if (
-      exercises.some(
-        (ex) =>
-          !ex.title ||
-          ex.videoDurationSec <= 0 ||
-          ex.performDurationSec <= 0
-      )
-    ) {
-      alert('Please fill in all fields for each exercise');
-      return;
-    }
-
-    const complexIdMap: Record<string, string> = {};
-    for (const info of complexesInfo) {
-      if (info.isNew) {
-        const res = await fetch('/api/complexes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            trainingId,
-            order: info.order,
-            rounds: info.rounds,
-          }),
-        });
-        const data = await res.json();
-        complexIdMap[info.id] = data.id;
-      } else {
-        complexIdMap[info.id] = info.id;
-      }
-    }
-
-    for (const ex of exercises) {
-      const { id, isNew, ...rest } = ex;
-      const payload = { ...rest, complexId: complexIdMap[ex.complexId] };
-      if (isNew) {
-        await fetch('/api/exercises', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      } else if (id) {
-        await fetch(`/api/exercises/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      }
-    }
-
-    setExercises([]);
-    router.push(`/admin/categories/${categoryId}`);
-  };
 
   const handleExerciseDrop = (
     e: React.DragEvent<HTMLDivElement>,
@@ -206,6 +204,7 @@ export default function TrainingExercisesPage() {
       setExercises((prev) => {
         const next = [...prev];
         next[Number(idx)] = { ...next[Number(idx)], complexId };
+        saveExercise(next[Number(idx)], Number(idx));
         return next;
       });
     } else {
@@ -214,7 +213,7 @@ export default function TrainingExercisesPage() {
   };
 
   const deleteExercise = async (ex: ExerciseForm, index: number) => {
-    if (!ex.isNew && ex.id) {
+    if (ex.id) {
       await fetch(`/api/exercises/${ex.id}`, { method: 'DELETE' });
     } else if (ex.muxId) {
       await fetch(`/api/upload?assetId=${ex.muxId}`, { method: 'DELETE' });
@@ -223,24 +222,7 @@ export default function TrainingExercisesPage() {
   };
 
   const deleteComplex = async (complex: ComplexInfo) => {
-    if (complex.isNew) {
-      const related = exercises.filter((ex) => ex.complexId === complex.id);
-      for (const ex of related) {
-        if (!ex.isNew && ex.id) {
-          await fetch(`/api/exercises/${ex.id}`, { method: 'DELETE' });
-        } else if (ex.muxId) {
-          await fetch(`/api/upload?assetId=${ex.muxId}`, { method: 'DELETE' });
-        }
-      }
-    } else {
-      const unsaved = exercises.filter(
-        (ex) => ex.complexId === complex.id && ex.isNew && ex.muxId
-      );
-      for (const ex of unsaved) {
-        await fetch(`/api/upload?assetId=${ex.muxId}`, { method: 'DELETE' });
-      }
-      await fetch(`/api/complexes/${complex.id}`, { method: 'DELETE' });
-    }
+    await fetch(`/api/complexes/${complex.id}`, { method: 'DELETE' });
     setExercises((prev) => prev.filter((ex) => ex.complexId !== complex.id));
     setComplexesInfo((prev) => prev.filter((c) => c.id !== complex.id));
   };
@@ -316,6 +298,49 @@ export default function TrainingExercisesPage() {
                           placeholder="title"
                           className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
                         />
+                        <div className="flex gap-2">
+                          <button
+                            className={`px-2 py-1 rounded ${!ex.useDuration ? 'bg-blue-600' : 'bg-neutral-800'}`}
+                            onClick={() => updateExercise(idx, 'useDuration', false)}
+                          >
+                            <i className="fa-solid fa-repeat" />
+                          </button>
+                          <button
+                            className={`px-2 py-1 rounded ${ex.useDuration ? 'bg-blue-600' : 'bg-neutral-800'}`}
+                            onClick={() => updateExercise(idx, 'useDuration', true)}
+                          >
+                            <i className="fa-solid fa-clock" />
+                          </button>
+                        </div>
+                        {ex.useDuration ? (
+                          <input
+                            type="number"
+                            value={ex.performDurationSec}
+                            onChange={(e) =>
+                              updateExercise(
+                                idx,
+                                'performDurationSec',
+                                Number(e.target.value)
+                              )
+                            }
+                            placeholder="duration sec"
+                            className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
+                          />
+                        ) : (
+                          <input
+                            type="number"
+                            value={ex.repetitions ?? 1}
+                            onChange={(e) =>
+                              updateExercise(
+                                idx,
+                                'repetitions',
+                                Number(e.target.value)
+                              )
+                            }
+                            placeholder="repetitions"
+                            className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
+                          />
+                        )}
                         <input
                           type="number"
                           value={ex.videoDurationSec}
@@ -327,19 +352,6 @@ export default function TrainingExercisesPage() {
                             )
                           }
                           placeholder="video duration sec"
-                          className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
-                        />
-                        <input
-                          type="number"
-                          value={ex.performDurationSec}
-                          onChange={(e) =>
-                            updateExercise(
-                              idx,
-                              'performDurationSec',
-                              Number(e.target.value)
-                            )
-                          }
-                          placeholder="perform duration sec"
                           className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
                         />
                         <button
@@ -361,12 +373,6 @@ export default function TrainingExercisesPage() {
           </div>
         ))}
       </div>
-      <button
-        className="mt-6 px-4 py-2 bg-blue-600 rounded-lg text-sm font-medium hover:bg-blue-500"
-        onClick={handleSave}
-      >
-        Save
-      </button>
     </AdminLayout>
   );
 }
