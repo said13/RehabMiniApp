@@ -7,12 +7,11 @@ export default function TrainingExercisesPage() {
   const router = useRouter();
   const { categoryId, trainingId } = router.query as { categoryId?: string; trainingId?: string };
   const [training, setTraining] = useState<Training | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<number[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number[]>>({});
   type ExerciseForm = Omit<Exercise, 'id'>;
   const createId = () => Math.random().toString(36).substring(2, 9);
-  const [currentComplexId, setCurrentComplexId] = useState<string>(createId());
   const [complexesInfo, setComplexesInfo] = useState([
-    { id: currentComplexId, order: 1, rounds: 1 },
+    { id: createId(), order: 1, rounds: 1 },
   ]);
   const [pendingExercises, setPendingExercises] = useState<ExerciseForm[]>([]);
 
@@ -34,10 +33,13 @@ export default function TrainingExercisesPage() {
     setTraining(data);
   };
 
-  const handleFiles = async (files: FileList | null) => {
+  const handleFiles = async (files: FileList | null, complexId: string) => {
     if (!files || files.length === 0) return;
     const fileArr = Array.from(files);
-    setUploadProgress(new Array(fileArr.length).fill(0));
+    setUploadProgress((prev) => ({
+      ...prev,
+      [complexId]: new Array(fileArr.length).fill(0),
+    }));
     const meta = fileArr.map((f) => ({ filename: f.name, contentType: f.type }));
     const res = await fetch('/api/upload', {
       method: 'POST',
@@ -52,23 +54,27 @@ export default function TrainingExercisesPage() {
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
           setUploadProgress((prev) => {
-            const next = [...prev];
-            next[idx] = Math.round((e.loaded / e.total) * 100);
+            const next = { ...prev };
+            const arr = next[complexId] ? [...next[complexId]] : [];
+            arr[idx] = Math.round((e.loaded / e.total) * 100);
+            next[complexId] = arr;
             return next;
           });
         }
       };
       xhr.onload = () => {
         setUploadProgress((prev) => {
-          const next = [...prev];
-          next[idx] = 100;
+          const next = { ...prev };
+          const arr = next[complexId] ? [...next[complexId]] : [];
+          arr[idx] = 100;
+          next[complexId] = arr;
           return next;
         });
         setPendingExercises((prev) => [
           ...prev,
           {
             title: '',
-            complexId: currentComplexId,
+            complexId,
             muxId: u.assetId,
             videoUrl: `https://stream.mux.com/${u.assetId}.m3u8`,
             videoDurationSec: 0,
@@ -78,8 +84,10 @@ export default function TrainingExercisesPage() {
       };
       xhr.onerror = () => {
         setUploadProgress((prev) => {
-          const next = [...prev];
-          next[idx] = 0;
+          const next = { ...prev };
+          const arr = next[complexId] ? [...next[complexId]] : [];
+          arr[idx] = 0;
+          next[complexId] = arr;
           return next;
         });
       };
@@ -98,7 +106,6 @@ export default function TrainingExercisesPage() {
 
   const startNewComplex = () => {
     const newId = createId();
-    setCurrentComplexId(newId);
     setComplexesInfo((prev) => [
       ...prev,
       { id: newId, order: prev.length + 1, rounds: 1 },
@@ -145,6 +152,23 @@ export default function TrainingExercisesPage() {
     router.push(`/admin/categories/${categoryId}`);
   };
 
+  const handleExerciseDrop = (
+    e: React.DragEvent<HTMLDivElement>,
+    complexId: string
+  ) => {
+    e.preventDefault();
+    const idx = e.dataTransfer.getData('text/plain');
+    if (idx) {
+      setPendingExercises((prev) => {
+        const next = [...prev];
+        next[Number(idx)] = { ...next[Number(idx)], complexId };
+        return next;
+      });
+    } else {
+      handleFiles(e.dataTransfer.files, complexId);
+    }
+  };
+
   return (
     <AdminLayout>
       <button
@@ -154,70 +178,96 @@ export default function TrainingExercisesPage() {
         Back
       </button>
       <h1 className="text-2xl font-bold mb-4">Training: {training?.title}</h1>
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-sm text-neutral-400">
-          Complex #{complexesInfo.findIndex((c) => c.id === currentComplexId) + 1}
-        </span>
-        <button
-          className="px-3 py-2 text-sm bg-neutral-800 rounded-lg hover:bg-neutral-700"
-          onClick={startNewComplex}
-        >
-          Next complex
-        </button>
-      </div>
-      <div
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={(e) => {
-          e.preventDefault();
-          handleFiles(e.dataTransfer.files);
-        }}
-        className="border-2 border-dashed border-neutral-600 rounded-lg p-6 mb-6 text-center"
+      <button
+        className="px-3 py-2 mb-4 text-sm bg-neutral-800 rounded-lg hover:bg-neutral-700"
+        onClick={startNewComplex}
       >
-        <p className="mb-2 text-sm text-gray-400">Drag & drop video here or choose files</p>
-        <input
-          type="file"
-          accept="video/*"
-          multiple
-          onChange={(e) => handleFiles(e.target.files)}
-          className="text-sm"
-        />
-        {uploadProgress.map((p, i) => (
-          <progress key={i} value={p} max="100" className="w-full mt-2">
-            {p}%
-          </progress>
+        Add complex
+      </button>
+      <div className="space-y-6">
+        {complexesInfo.map((complex, cIdx) => (
+          <div key={complex.id}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-neutral-400">
+                Complex #{cIdx + 1}
+              </span>
+            </div>
+            <div
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => handleExerciseDrop(e, complex.id)}
+              className="border-2 border-dashed border-neutral-600 rounded-lg p-4 text-center"
+            >
+              <p className="mb-2 text-sm text-gray-400">
+                Drag & drop video or exercises here
+              </p>
+              <input
+                type="file"
+                accept="video/*"
+                multiple
+                onChange={(e) => handleFiles(e.target.files, complex.id)}
+                className="text-sm mb-4"
+              />
+              {pendingExercises.map(
+                (ex, idx) =>
+                  ex.complexId === complex.id && (
+                    <div
+                      key={idx}
+                      draggable
+                      onDragStart={(e) =>
+                        e.dataTransfer.setData('text/plain', idx.toString())
+                      }
+                      className="bg-neutral-900 p-4 rounded-lg mb-4 space-y-2 text-left"
+                    >
+                      {ex.videoUrl && (
+                        <video
+                          src={ex.videoUrl}
+                          controls
+                          className="w-full rounded mb-2"
+                        />
+                      )}
+                      <input
+                        value={ex.title}
+                        onChange={(e) => updateExercise(idx, 'title', e.target.value)}
+                        placeholder="title"
+                        className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
+                      />
+                      <input
+                        type="number"
+                        value={ex.videoDurationSec}
+                        onChange={(e) =>
+                          updateExercise(idx, 'videoDurationSec', Number(e.target.value))
+                        }
+                        placeholder="video duration sec"
+                        className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
+                      />
+                      <input
+                        type="number"
+                        value={ex.performDurationSec}
+                        onChange={(e) =>
+                          updateExercise(
+                            idx,
+                            'performDurationSec',
+                            Number(e.target.value)
+                          )
+                        }
+                        placeholder="perform duration sec"
+                        className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
+                      />
+                    </div>
+                  )
+              )}
+              {uploadProgress[complex.id]?.map((p, i) => (
+                <progress key={i} value={p} max="100" className="w-full mt-2">
+                  {p}%
+                </progress>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
-
-      {pendingExercises.map((ex, idx) => (
-        <div key={idx} className="bg-neutral-900 p-4 rounded-lg mb-4 space-y-2">
-          {ex.videoUrl && (
-            <video src={ex.videoUrl} controls className="w-full rounded mb-2" />
-          )}
-          <input
-            value={ex.title}
-            onChange={(e) => updateExercise(idx, 'title', e.target.value)}
-            placeholder="title"
-            className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
-          />
-          <input
-            type="number"
-            value={ex.videoDurationSec}
-            onChange={(e) => updateExercise(idx, 'videoDurationSec', Number(e.target.value))}
-            placeholder="video duration sec"
-            className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
-          />
-          <input
-            type="number"
-            value={ex.performDurationSec}
-            onChange={(e) => updateExercise(idx, 'performDurationSec', Number(e.target.value))}
-            placeholder="perform duration sec"
-            className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
-          />
-        </div>
-      ))}
       {pendingExercises.length > 0 && (
         <button
-          className="mt-4 px-4 py-2 bg-blue-600 rounded-lg text-sm font-medium hover:bg-blue-500"
+          className="mt-6 px-4 py-2 bg-blue-600 rounded-lg text-sm font-medium hover:bg-blue-500"
           onClick={handleCreateTraining}
         >
           Create Training
