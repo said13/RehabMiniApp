@@ -75,7 +75,7 @@ export default function TrainingExercisesPage() {
           });
         }
       };
-      xhr.onload = () => {
+      xhr.onload = async () => {
         setUploadProgress((prev) => {
           const next = { ...prev };
           const arr = next[complexId] ? [...next[complexId]] : [];
@@ -83,19 +83,34 @@ export default function TrainingExercisesPage() {
           next[complexId] = arr;
           return next;
         });
-        setExercises((prev) => [
-          ...prev,
-          {
-            id: createId(),
-            isNew: true,
-            title: '',
-            complexId,
-            muxId: u.assetId,
-            videoUrl: `https://stream.mux.com/${u.assetId}.m3u8`,
-            videoDurationSec: 0,
-            performDurationSec: 0,
-          },
-        ]);
+        try {
+          let info: any = null;
+          for (let attempt = 0; attempt < 5; attempt++) {
+            const infoRes = await fetch(`/api/upload?uploadId=${u.uploadId}`);
+            if (infoRes.status === 200) {
+              info = await infoRes.json();
+              break;
+            }
+            await new Promise((r) => setTimeout(r, 1000));
+          }
+          if (info && info.assetId && info.playbackId) {
+            setExercises((prev) => [
+              ...prev,
+              {
+                id: createId(),
+                isNew: true,
+                title: '',
+                complexId,
+                muxId: info.assetId,
+                videoUrl: `https://stream.mux.com/${info.playbackId}.m3u8`,
+                videoDurationSec: 0,
+                performDurationSec: 0,
+              },
+            ]);
+          }
+        } catch (err) {
+          console.error('Failed to retrieve Mux playback ID', err);
+        }
       };
       xhr.onerror = () => {
         setUploadProgress((prev) => {
