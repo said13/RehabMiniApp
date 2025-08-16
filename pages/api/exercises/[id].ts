@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { eq } from 'drizzle-orm';
 import { db, exercises } from '../../../src/db';
+import { deleteMuxAsset } from '../../../src/utils/mux';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -59,11 +60,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
     }
     case 'DELETE': {
-      const deleted = await db.delete(exercises).where(eq(exercises.id, id)).returning();
-      if (!deleted.length) {
+      const existing = await db
+        .select()
+        .from(exercises)
+        .where(eq(exercises.id, id))
+        .limit(1);
+      if (!existing.length) {
         res.status(404).json({ message: 'Not found' });
         break;
       }
+      const ex = existing[0];
+      if (ex.muxId) {
+        await deleteMuxAsset(ex.muxId);
+      }
+      const deleted = await db
+        .delete(exercises)
+        .where(eq(exercises.id, id))
+        .returning();
       res.status(200).json(deleted[0]);
       break;
     }

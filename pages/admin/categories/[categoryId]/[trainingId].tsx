@@ -1,19 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import AdminLayout from 'src/components/admin/AdminLayout';
-import type { Training, Exercise } from 'src/types';
+import type { Training, Exercise, Complex } from 'src/types';
 
 export default function TrainingExercisesPage() {
   const router = useRouter();
   const { categoryId, trainingId } = router.query as { categoryId?: string; trainingId?: string };
   const [training, setTraining] = useState<Training | null>(null);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number[]>>({});
-  type ExerciseForm = Omit<Exercise, 'id'>;
+  type ExerciseForm = Omit<Exercise, 'id'> & { id?: string; isNew?: boolean };
+  type ComplexInfo = Omit<Complex, 'trainingId'> & { id: string; isNew?: boolean };
   const createId = () => Math.random().toString(36).substring(2, 9);
-  const [complexesInfo, setComplexesInfo] = useState([
-    { id: createId(), order: 1, rounds: 1 },
-  ]);
-  const [pendingExercises, setPendingExercises] = useState<ExerciseForm[]>([]);
+  const [complexesInfo, setComplexesInfo] = useState<ComplexInfo[]>([]);
+  const [exercises, setExercises] = useState<ExerciseForm[]>([]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !window.localStorage.getItem('admin-token')) {
@@ -25,12 +24,26 @@ export default function TrainingExercisesPage() {
   useEffect(() => {
     if (!trainingId) return;
     fetchTraining();
+    fetchComplexesAndExercises();
   }, [trainingId]);
 
   const fetchTraining = async () => {
     const res = await fetch(`/api/trainings/${trainingId}`);
     const data = await res.json();
     setTraining(data);
+  };
+
+  const fetchComplexesAndExercises = async () => {
+    const cRes = await fetch('/api/complexes');
+    const allComplexes: Complex[] = await cRes.json();
+    const related = allComplexes.filter((c) => c.trainingId === trainingId);
+    setComplexesInfo(related.map((c) => ({ ...c, isNew: false })));
+    const eRes = await fetch('/api/exercises');
+    const allExercises: Exercise[] = await eRes.json();
+    const exRelated = allExercises.filter((ex) =>
+      related.some((c) => c.id === ex.complexId)
+    );
+    setExercises(exRelated.map((ex) => ({ ...ex, isNew: false })));
   };
 
   const handleFiles = async (files: FileList | null, complexId: string) => {
@@ -70,9 +83,11 @@ export default function TrainingExercisesPage() {
           next[complexId] = arr;
           return next;
         });
-        setPendingExercises((prev) => [
+        setExercises((prev) => [
           ...prev,
           {
+            id: createId(),
+            isNew: true,
             title: '',
             complexId,
             muxId: u.assetId,
@@ -97,7 +112,7 @@ export default function TrainingExercisesPage() {
   };
 
   const updateExercise = (index: number, field: keyof ExerciseForm, value: any) => {
-    setPendingExercises((prev) => {
+    setExercises((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], [field]: value };
       return next;
@@ -108,13 +123,13 @@ export default function TrainingExercisesPage() {
     const newId = createId();
     setComplexesInfo((prev) => [
       ...prev,
-      { id: newId, order: prev.length + 1, rounds: 1 },
+      { id: newId, order: prev.length + 1, rounds: 1, isNew: true },
     ]);
   };
 
-  const handleCreateTraining = async () => {
+  const handleSave = async () => {
     if (
-      pendingExercises.some(
+      exercises.some(
         (ex) =>
           !ex.title ||
           ex.videoDurationSec <= 0 ||
@@ -127,28 +142,42 @@ export default function TrainingExercisesPage() {
 
     const complexIdMap: Record<string, string> = {};
     for (const info of complexesInfo) {
-      const res = await fetch('/api/complexes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          trainingId,
-          order: info.order,
-          rounds: info.rounds,
-        }),
-      });
-      const data = await res.json();
-      complexIdMap[info.id] = data.id;
+      if (info.isNew) {
+        const res = await fetch('/api/complexes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            trainingId,
+            order: info.order,
+            rounds: info.rounds,
+          }),
+        });
+        const data = await res.json();
+        complexIdMap[info.id] = data.id;
+      } else {
+        complexIdMap[info.id] = info.id;
+      }
     }
 
-    for (const ex of pendingExercises) {
-      await fetch('/api/exercises', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...ex, complexId: complexIdMap[ex.complexId] }),
-      });
+    for (const ex of exercises) {
+      const { id, isNew, ...rest } = ex;
+      const payload = { ...rest, complexId: complexIdMap[ex.complexId] };
+      if (isNew) {
+        await fetch('/api/exercises', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } else if (id) {
+        await fetch(`/api/exercises/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      }
     }
 
-    setPendingExercises([]);
+    setExercises([]);
     router.push(`/admin/categories/${categoryId}`);
   };
 
@@ -159,7 +188,7 @@ export default function TrainingExercisesPage() {
     e.preventDefault();
     const idx = e.dataTransfer.getData('text/plain');
     if (idx) {
-      setPendingExercises((prev) => {
+      setExercises((prev) => {
         const next = [...prev];
         next[Number(idx)] = { ...next[Number(idx)], complexId };
         return next;
@@ -167,6 +196,32 @@ export default function TrainingExercisesPage() {
     } else {
       handleFiles(e.dataTransfer.files, complexId);
     }
+  };
+
+  const deleteExercise = async (ex: ExerciseForm, index: number) => {
+    if (ex.id) {
+      await fetch(`/api/exercises/${ex.id}`, { method: 'DELETE' });
+    } else if (ex.muxId) {
+      await fetch(`/api/mux-assets/${ex.muxId}`, { method: 'DELETE' });
+    }
+    setExercises((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const deleteComplex = async (complex: ComplexInfo) => {
+    if (complex.isNew) {
+      const related = exercises.filter((ex) => ex.complexId === complex.id);
+      for (const ex of related) {
+        if (ex.id) {
+          await fetch(`/api/exercises/${ex.id}`, { method: 'DELETE' });
+        } else if (ex.muxId) {
+          await fetch(`/api/mux-assets/${ex.muxId}`, { method: 'DELETE' });
+        }
+      }
+    } else {
+      await fetch(`/api/complexes/${complex.id}`, { method: 'DELETE' });
+    }
+    setExercises((prev) => prev.filter((ex) => ex.complexId !== complex.id));
+    setComplexesInfo((prev) => prev.filter((c) => c.id !== complex.id));
   };
 
   return (
@@ -191,6 +246,12 @@ export default function TrainingExercisesPage() {
               <span className="text-sm text-neutral-400">
                 Complex #{cIdx + 1}
               </span>
+              <button
+                className="text-xs text-red-400"
+                onClick={() => deleteComplex(complex)}
+              >
+                Delete complex
+              </button>
             </div>
             <div
               onDragOver={(e) => e.preventDefault()}
@@ -205,57 +266,71 @@ export default function TrainingExercisesPage() {
                 accept="video/*"
                 multiple
                 onChange={(e) => handleFiles(e.target.files, complex.id)}
-                className="text-sm mb-4"
+                className="text-sm"
               />
-              {pendingExercises.map(
-                (ex, idx) =>
-                  ex.complexId === complex.id && (
-                    <div
-                      key={idx}
-                      draggable
-                      onDragStart={(e) =>
-                        e.dataTransfer.setData('text/plain', idx.toString())
-                      }
-                      className="bg-neutral-900 p-4 rounded-lg mb-4 space-y-2 text-left"
-                    >
-                      {ex.videoUrl && (
-                        <video
-                          src={ex.videoUrl}
-                          controls
-                          className="w-full rounded mb-2"
+              <div className="mt-4 flex flex-wrap gap-4 justify-start">
+                {exercises.map(
+                  (ex, idx) =>
+                    ex.complexId === complex.id && (
+                      <div
+                        key={ex.id || idx}
+                        draggable
+                        onDragStart={(e) =>
+                          e.dataTransfer.setData('text/plain', idx.toString())
+                        }
+                        className="bg-neutral-900 p-4 rounded-lg space-y-2 text-left w-60"
+                      >
+                        {ex.videoUrl && (
+                          <video
+                            src={ex.videoUrl}
+                            controls
+                            className="w-full rounded mb-2"
+                          />
+                        )}
+                        <input
+                          value={ex.title}
+                          onChange={(e) =>
+                            updateExercise(idx, 'title', e.target.value)
+                          }
+                          placeholder="title"
+                          className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
                         />
-                      )}
-                      <input
-                        value={ex.title}
-                        onChange={(e) => updateExercise(idx, 'title', e.target.value)}
-                        placeholder="title"
-                        className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
-                      />
-                      <input
-                        type="number"
-                        value={ex.videoDurationSec}
-                        onChange={(e) =>
-                          updateExercise(idx, 'videoDurationSec', Number(e.target.value))
-                        }
-                        placeholder="video duration sec"
-                        className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
-                      />
-                      <input
-                        type="number"
-                        value={ex.performDurationSec}
-                        onChange={(e) =>
-                          updateExercise(
-                            idx,
-                            'performDurationSec',
-                            Number(e.target.value)
-                          )
-                        }
-                        placeholder="perform duration sec"
-                        className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
-                      />
-                    </div>
-                  )
-              )}
+                        <input
+                          type="number"
+                          value={ex.videoDurationSec}
+                          onChange={(e) =>
+                            updateExercise(
+                              idx,
+                              'videoDurationSec',
+                              Number(e.target.value)
+                            )
+                          }
+                          placeholder="video duration sec"
+                          className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
+                        />
+                        <input
+                          type="number"
+                          value={ex.performDurationSec}
+                          onChange={(e) =>
+                            updateExercise(
+                              idx,
+                              'performDurationSec',
+                              Number(e.target.value)
+                            )
+                          }
+                          placeholder="perform duration sec"
+                          className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
+                        />
+                        <button
+                          className="text-xs text-red-400"
+                          onClick={() => deleteExercise(ex, idx)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )
+                )}
+              </div>
               {uploadProgress[complex.id]?.map((p, i) => (
                 <progress key={i} value={p} max="100" className="w-full mt-2">
                   {p}%
@@ -265,12 +340,12 @@ export default function TrainingExercisesPage() {
           </div>
         ))}
       </div>
-      {pendingExercises.length > 0 && (
+      {exercises.length > 0 && (
         <button
           className="mt-6 px-4 py-2 bg-blue-600 rounded-lg text-sm font-medium hover:bg-blue-500"
-          onClick={handleCreateTraining}
+          onClick={handleSave}
         >
-          Create Training
+          Save
         </button>
       )}
     </AdminLayout>
