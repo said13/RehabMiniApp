@@ -16,31 +16,49 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return;
   }
 
-  const { filename, contentType } = req.body as { filename: string; contentType: string };
   if (!process.env.MUX_TOKEN_ID || !process.env.MUX_TOKEN_SECRET) {
     res.status(500).json({ message: 'Mux credentials are not configured' });
     return;
   }
 
   const auth = Buffer.from(`${process.env.MUX_TOKEN_ID}:${process.env.MUX_TOKEN_SECRET}`).toString('base64');
-  const muxRes = await fetch('https://api.mux.com/video/v1/uploads', {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${auth}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      new_asset_settings: { playback_policy: ['public'] },
-      cors_origin: req.headers.origin || '*',
-    }),
-  });
 
-  if (!muxRes.ok) {
-    const err = await muxRes.text();
-    res.status(500).json({ message: 'Mux upload creation failed', details: err });
-    return;
+  const createUpload = async () => {
+    const muxRes = await fetch('https://api.mux.com/video/v1/uploads', {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        new_asset_settings: { playback_policy: ['public'] },
+        cors_origin: req.headers.origin || '*',
+      }),
+    });
+
+    if (!muxRes.ok) {
+      const err = await muxRes.text();
+      throw new Error(err);
+    }
+
+    const data = await muxRes.json();
+    return { uploadUrl: data.data.url, uploadId: data.data.id, assetId: data.data.asset_id };
+  };
+
+  const { files } = req.body as { files?: { filename: string; contentType: string }[] };
+
+  try {
+    if (Array.isArray(files) && files.length > 0) {
+      const uploads = [];
+      for (let i = 0; i < files.length; i++) {
+        uploads.push(await createUpload());
+      }
+      res.status(200).json({ uploads });
+    } else {
+      const single = await createUpload();
+      res.status(200).json(single);
+    }
+  } catch (e: any) {
+    res.status(500).json({ message: 'Mux upload creation failed', details: e.message });
   }
-
-  const data = await muxRes.json();
-  res.status(200).json({ uploadUrl: data.data.url, uploadId: data.data.id, assetId: data.data.asset_id });
 }
