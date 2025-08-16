@@ -202,7 +202,7 @@ export default function TrainingExercisesPage() {
     if (ex.id) {
       await fetch(`/api/exercises/${ex.id}`, { method: 'DELETE' });
     } else if (ex.muxId) {
-      await fetch(`/api/mux-assets/${ex.muxId}`, { method: 'DELETE' });
+      await fetch(`/api/upload?assetId=${ex.muxId}`, { method: 'DELETE' });
     }
     setExercises((prev) => prev.filter((_, i) => i !== index));
   };
@@ -214,7 +214,7 @@ export default function TrainingExercisesPage() {
         if (ex.id) {
           await fetch(`/api/exercises/${ex.id}`, { method: 'DELETE' });
         } else if (ex.muxId) {
-          await fetch(`/api/mux-assets/${ex.muxId}`, { method: 'DELETE' });
+          await fetch(`/api/upload?assetId=${ex.muxId}`, { method: 'DELETE' });
         }
       }
     } else {
@@ -340,14 +340,12 @@ export default function TrainingExercisesPage() {
           </div>
         ))}
       </div>
-      {exercises.length > 0 && (
-        <button
-          className="mt-6 px-4 py-2 bg-blue-600 rounded-lg text-sm font-medium hover:bg-blue-500"
-          onClick={handleSave}
-        >
-          Save
-        </button>
-      )}
+      <button
+        className="mt-6 px-4 py-2 bg-blue-600 rounded-lg text-sm font-medium hover:bg-blue-500"
+        onClick={handleSave}
+      >
+        Save
+      </button>
     </AdminLayout>
   );
 }
