@@ -106,53 +106,73 @@ export default function TrainingExercisesPage() {
 
   return (
     <AdminLayout>
-      <button onClick={() => router.push(`/admin/categories/${categoryId}`)}>Back</button>
-      <h1>Training: {training?.title}</h1>
+      <button
+        className="mb-4 px-3 py-2 text-sm bg-neutral-800 rounded-lg hover:bg-neutral-700"
+        onClick={() => router.push(`/admin/categories/${categoryId}`)}
+      >
+        Back
+      </button>
+      <h1 className="text-2xl font-bold mb-4">Training: {training?.title}</h1>
       <div
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           e.preventDefault();
           handleFiles(e.dataTransfer.files);
         }}
-        style={{ border: '2px dashed #ccc', padding: 20, marginBottom: 20 }}
+        className="border-2 border-dashed border-neutral-600 rounded-lg p-6 mb-6 text-center"
       >
-        <p>Drag & drop video here or choose files</p>
-        <input type="file" accept="video/*" multiple onChange={(e) => handleFiles(e.target.files)} />
+        <p className="mb-2 text-sm text-gray-400">Drag & drop video here or choose files</p>
+        <input
+          type="file"
+          accept="video/*"
+          multiple
+          onChange={(e) => handleFiles(e.target.files)}
+          className="text-sm"
+        />
         {uploadProgress.map((p, i) => (
-          <progress key={i} value={p} max="100">
+          <progress key={i} value={p} max="100" className="w-full mt-2">
             {p}%
           </progress>
         ))}
       </div>
 
       {pendingExercises.map((ex, idx) => (
-        <div key={idx} style={{ marginBottom: 20 }}>
+        <div key={idx} className="bg-neutral-900 p-4 rounded-lg mb-4 space-y-2">
           {ex.videoUrl && (
-            <video src={ex.videoUrl} controls width={250} style={{ display: 'block', marginBottom: 10 }} />
+            <video src={ex.videoUrl} controls className="w-full rounded mb-2" />
           )}
           <input
             value={ex.title}
             onChange={(e) => updateExercise(idx, 'title', e.target.value)}
             placeholder="title"
+            className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
           />
           <input
             value={ex.complexId}
             onChange={(e) => updateExercise(idx, 'complexId', e.target.value)}
             placeholder="complexId"
+            className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
           />
           <input
             type="number"
             value={ex.videoDurationSec}
             onChange={(e) => updateExercise(idx, 'videoDurationSec', Number(e.target.value))}
             placeholder="video duration sec"
+            className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
           />
           <input
             type="number"
             value={ex.performDurationSec}
             onChange={(e) => updateExercise(idx, 'performDurationSec', Number(e.target.value))}
             placeholder="perform duration sec"
+            className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
           />
-          <button onClick={() => addExercise(idx)}>Add</button>
+          <button
+            className="px-4 py-2 bg-blue-600 rounded-lg text-sm font-medium hover:bg-blue-500"
+            onClick={() => addExercise(idx)}
+          >
+            Add
+          </button>
         </div>
       ))}
 

@@ -39,33 +39,51 @@ export default function CategoryDetail() {
 
   return (
     <AdminLayout>
-      <button onClick={() => router.push('/admin/categories')}>Back</button>
-      <h1>Category: {category?.title}</h1>
-      <ul>
+      <button
+        className="mb-4 px-3 py-2 text-sm bg-neutral-800 rounded-lg hover:bg-neutral-700"
+        onClick={() => router.push('/admin/categories')}
+      >
+        Back
+      </button>
+      <h1 className="text-2xl font-bold mb-4">Category: {category?.title}</h1>
+      <ul className="space-y-2 mb-8">
         {trainings.map((t) => (
-          <li key={t.id}>
-            <button onClick={() => router.push(`/admin/categories/${categoryId}/${t.id}`)}>{t.title}</button>
+          <li key={t.id} className="bg-neutral-900 px-4 py-2 rounded-lg">
+            <button
+              className="text-blue-400 hover:underline"
+              onClick={() => router.push(`/admin/categories/${categoryId}/${t.id}`)}
+            >
+              {t.title}
+            </button>
           </li>
         ))}
       </ul>
-      <h2 style={{ marginTop: 30 }}>Add Training</h2>
-      <form onSubmit={handleCreate}>
+      <h2 className="text-xl font-semibold mb-2">Add Training</h2>
+      <form onSubmit={handleCreate} className="space-y-3 max-w-sm">
         <input
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
           placeholder="title"
+          className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
         />
         <input
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
           placeholder="description"
+          className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
         />
         <input
           value={form.coverUrl}
           onChange={(e) => setForm({ ...form, coverUrl: e.target.value })}
           placeholder="cover url"
+          className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
         />
-        <button type="submit">Create</button>
+        <button
+          type="submit"
+          className="px-4 py-2 bg-blue-600 rounded-lg text-sm font-medium hover:bg-blue-500"
+        >
+          Create
+        </button>
       </form>
     </AdminLayout>
   );
