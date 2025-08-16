@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import AdminLayout from 'src/components/admin/AdminLayout';
 import type { Category, Training } from 'src/types';
+import { ImageUploader } from 'src/components/admin/ImageUploader';
 
 export default function CategoryDetail() {
   const router = useRouter();
@@ -72,11 +73,9 @@ export default function CategoryDetail() {
           placeholder="description"
           className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
         />
-        <input
+        <ImageUploader
           value={form.coverUrl}
-          onChange={(e) => setForm({ ...form, coverUrl: e.target.value })}
-          placeholder="cover url"
-          className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-sm"
+          onChange={(url) => setForm({ ...form, coverUrl: url })}
         />
         <button
           type="submit"
