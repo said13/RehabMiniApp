@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { Training, Exercise, ComplexWithExercises } from '../types';
 
 interface ExercisesSectionProps {
@@ -10,21 +11,29 @@ interface ExercisesSectionProps {
 
 export function ExercisesSection({ course, complexes, onBack, onStartCourse, onStartExercise }: ExercisesSectionProps) {
   return (
-    <div className="px-4 pt-4">
-      <button
-        className="mb-4 text-sm text-gray-400 flex items-center gap-1"
-        onClick={onBack}
-      >
-        <i className="fa-solid fa-chevron-left"></i>
-        <span>Back</span>
-      </button>
-      <button
-        className="w-full mb-4 px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-500 transition"
-        onClick={onStartCourse}
-      >
-        Start workout
-      </button>
-      <h4 className="text-lg font-bold mb-3">{course.title}</h4>
+    <div>
+      <div className="relative h-48 w-full">
+        <Image src={course.coverUrl} alt={course.title} fill className="object-cover" unoptimized />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+        <button
+          aria-label="Back"
+          className="absolute top-4 left-4 p-2 bg-black/50 rounded-full text-white text-sm"
+          onClick={onBack}
+        >
+          <i className="fa-solid fa-chevron-left"></i>
+        </button>
+        <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between">
+          <h4 className="text-lg font-bold text-white">{course.title}</h4>
+          <button
+            aria-label="Start workout"
+            className="p-4 bg-blue-600 text-white rounded-full text-2xl hover:bg-blue-500 transition"
+            onClick={onStartCourse}
+          >
+            <i className="fa-solid fa-play"></i>
+          </button>
+        </div>
+      </div>
+      <div className="px-4 pt-4">
         <div className="grid gap-4">
           {complexes.map((l, idx) => (
             <div key={l.id} className="rounded-2xl bg-neutral-900 border border-neutral-800 p-4">
@@ -50,6 +59,7 @@ export function ExercisesSection({ course, complexes, onBack, onStartCourse, onS
           ))}
         </div>
       </div>
-    );
+    </div>
+  );
 }
 
